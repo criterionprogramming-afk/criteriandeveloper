@@ -452,7 +452,7 @@ function openGetStarted(){
 					}else{
 						shapeArea.style["margin-top"]="20%"
 						shapeArea.style["margin-left"]="0.5%"
-						shapeArea.style["height"]="60%"
+						shapeArea.style["height"]="80%"
 						shapeArea.style["width"]="95%"
 					}
 					setTimeout(()=>{
@@ -513,7 +513,7 @@ function openAboutSection(){
 					}else{
 						shapeArea.style["margin-top"]="20%"
 						shapeArea.style["margin-left"]="0.5%"
-						shapeArea.style["height"]="60%"
+						shapeArea.style["height"]="80%"
 						shapeArea.style["width"]="95%"
 					}
 					setTimeout(()=>{
@@ -577,7 +577,7 @@ function openPrivacySection(){
 					}else{
 						shapeArea.style["margin-top"]="20%"
 						shapeArea.style["margin-left"]="0.5%"
-						shapeArea.style["height"]="60%"
+						shapeArea.style["height"]="80%"
 						shapeArea.style["width"]="95%"
 					}
 					
@@ -639,7 +639,7 @@ function openTermsAndConditions(){
 					}else{
 						shapeArea.style["margin-top"]="20%"
 						shapeArea.style["margin-left"]="0.5%"
-						shapeArea.style["height"]="60%"
+						shapeArea.style["height"]="80%"
 						shapeArea.style["width"]="95%"
 					}
 					setTimeout(()=>{
@@ -1570,6 +1570,7 @@ setInterval(()=>{
 if(queryString === "?adView"){
 	displayMainAdSection()
 }else{
+	mainAdDisplay.style.display = "none"
 	setTimeout(()=>{
 		dialogBackground.style.visibility = "visible"
 		setTimeout(()=>{
@@ -1593,4 +1594,14 @@ for(var i=0; i<xArray.length; i++){
 		csvSelector.click()
 	})
 	
+}
+
+const x1 = document.getElementById("third-image")
+const x2 = document.getElementById("second-image")
+const x3 = document.getElementById("top-image")
+
+if(window.innerWidth <= 990){
+	x1.src = "Images/xyt.png"
+	x2.src = "Images/xytt.png"
+	x3.src = "Images/xyttt.png"
 }

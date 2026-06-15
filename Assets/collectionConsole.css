@@ -1393,6 +1393,7 @@
 		outline: none;
 		font-family: Calibri;
 		color: #a09a9a;
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.btnClassOne{
@@ -2485,14 +2486,14 @@
 	}	
 	#openMessagingButton{
 		float: left;
-		width: 106px;
-		height: 106px;
+		width: 140px;
+		height: 140px;
 		border-radius: 50%;
 		box-shadow: 0px 0px 3px black;
 		position:fixed;
 		z-index:20;
 		background:white;
-		margin-left: 87%;
+		margin-left: 82%;
 		margin-top: 167%;
 		transition: all linear 400ms
 	}
@@ -2636,7 +2637,7 @@
 
 		color:#cbd5e1;
 
-		font-size:1.5rem;
+		font-size:2.5rem;
 
 		line-height:1.8;
 
@@ -2757,7 +2758,7 @@
 		rgba(79,140,255,.08);
 	}
 
-	#csvUploadIcon {font-size:3rem;margin-bottom:10px;color:#4f8cff;float: left;margin-right: 80%;margin-left: 4%;margin-top: -2%;}
+	#csvUploadIcon {font-size:9rem;margin-bottom:10px;color:#4f8cff;float: left;margin-right: 80%;margin-left: 45%;margin-top: -2%;}
 
 	#csvUploadTitle {color:#b1afaf;font-size: 2.2rem;font-weight:700;margin-top: 0%;margin-left: 4%;}
 
@@ -2847,6 +2848,8 @@
 
 		text-align:center;
 		margin-bottom:50px;
+		width: 91%;
+		font-size: 136%;
 	}
 
 	.terms-header h1 {
@@ -2865,7 +2868,7 @@
 
 	.terms-content {width: 100%;}
 
-	.terms-block {background:rgba(255,255,255,.03);padding:25px;border-radius:14px;border-left:4px solid #4f8cff;width: 87%;margin-top: 2%;}
+	.terms-block {background:rgba(255,255,255,.03);padding:25px;border-radius:14px;border-left:4px solid #4f8cff;width: 83%;margin-top: 2%;}
 
 	.terms-block h2 {
 
@@ -2954,7 +2957,7 @@
 
 	.about-content {float: left;height: 273px;}
 
-	.about-block {background:rgba(255,255,255,.03);border-left:4px solid #4f8cff;padding:25px;border-radius:14px;width: 91%;margin-left: 2%;float: left;margin-top: 2%;font-size: 2.2rem;}
+	.about-block {background:rgba(255,255,255,.03);border-left:4px solid #4f8cff;padding:25px;border-radius:14px;width: 89%;margin-left: 2%;float: left;margin-top: 2%;font-size: 2.2rem;}
 
 	.about-block h2 {
 
@@ -3016,6 +3019,7 @@
 
 		text-align: center;
 		margin-bottom: 50px;
+		width: 89%;
 	}
 
 	.privacy-header h1 {
@@ -3111,14 +3115,14 @@
 
 	/* Typography Hierarchy */
 	.tanzanite-download-btn .btn-text {
-		font-size: 26px;
+		font-size: 46px;
 		font-weight: 800;
 		text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 		margin-bottom: 6px;
 	}
 
 	.tanzanite-download-btn .btn-subtext {
-		font-size: 16px;
+		font-size: 19px;
 		font-weight: 500;
 		color: #c084fc; /* Soft Lavender Accent */
 		letter-spacing: 3px;
@@ -3170,20 +3174,20 @@
 
 	#download2Btn{
 		/* Exact Required Dimensions */
-		width: 287px;
-		height: 100px;
+		width: 434px;
+		height: 112px;
 		float:left;
-		margin-left:6.2%;
-		margin-top: -12.2%;
+		margin-left:28.2%;
+		margin-top: -10.2%;
 	}
 	#get-started-btn{
 		float:right;
-		margin-right:3%;
-		width: 24.1%;
-		margin-top: -5.2%;
-		height: 34px;
+		margin-right:11%;
+		width: 78.1%;
+		margin-top: -27.5%;
+		height: 84px;
 		border-radius: 7px;
-		font-size: 16px;
+		font-size: 38px;
 	}
 
 	.chrome-button {
@@ -3271,7 +3275,7 @@
 	  color: #4a5568;
 	  text-decoration: none;
 	  transition: color 0.2s ease;
-	  font-size: 18px;
+	  font-size: 24px;
 	}
 
 	.footer-link:hover {
@@ -3453,9 +3457,9 @@
 	#downloadBtn{
 		float:left;
 		width: 30%;
-		height: 304px;
+		height: 291px;
 		margin-left: 35%;
-		margin-top: -195px;
+		margin-top: -302px;
 		margin-bottom: 0px;
 		border-radius: 50%;
 	}
@@ -3749,7 +3753,7 @@
 		outline: none;
 		font-family: Calibri;
 		color: #a09a9a;
-		width: 94%;
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.btnClassOne{
@@ -3964,7 +3968,7 @@
 	}
 
 	#header{
-		height: 56px;
+		height: 95px;
 		width: 98%;
 		position: fixed;
 		float: left;
@@ -3979,16 +3983,16 @@
 	}
 
 	#menuBtn{
-		width: 3.5%;
+		width: 8.5%;
 		float:left;
 		margin-left: 1%;
 		margin-top: 7px;
 	}
 
 	#logo{
-		width: 156px;
+		width: 280px;
 		margin-top: 0.5%;
-		margin-left: 39%;
+		margin-left: 28%;
 	}
 
 	#mainSection{
@@ -4270,7 +4274,7 @@
 		background:white;
 		position:fixed;
 		z-index:7;
-		margin-top: 3%;
+		margin-top: 7%;
 		width: 23%;
 		height: 0px;
 		height: 0px;
@@ -4286,7 +4290,7 @@
 	}
 
 	.menuItem{
-		font-size: 17px;
+		font-size: 24px;
 		transition: all linear 70ms;
 		margin-top: 9%;
 	}
