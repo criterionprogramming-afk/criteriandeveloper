@@ -376,7 +376,7 @@ function openMenuDialog(show){
 				if(window.innerWidth > 990){					
 					menuShape.style["height"] = "50%"
 				}else{
-					menuShape.style["height"] = "400px"
+					menuShape.style["height"] = "600px"
 				}
 				setTimeout(()=>{			
 					menuList.style["opacity"] = "1"
