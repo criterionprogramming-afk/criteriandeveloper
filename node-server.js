@@ -30,7 +30,7 @@ mongoClient.connect()// Enable command monitoring for debugging
 import express from 'express'
 
 
-const client = new OpenAI();
+const client = new OpenAI({ fetch });
 
 const {zlib} = import("node:zlib")
 
