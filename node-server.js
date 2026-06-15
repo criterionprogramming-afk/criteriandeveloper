@@ -3709,8 +3709,9 @@ async function processAIRequest(request) {
 	
 	let ins = "1) Present all results in strictly json object format"+
 	"2) design an html page - with all relevant image links (in img objects) and code snippets - both from source files and generated content  - output it as a string to be loaded into android WebView object"+
-	"3) json object should be formatted: {response: html_page_string, files: [(same object format as inputed objects but with modified code where neccessary)]}"+
-	"4) input is in json object form. actual question asked will be referenced by the key: queryInput"
+	"3) json object should be formatted: {response: html_page_string (optimise for android WebView), files: [(same object format as inputed objects but with modified code where neccessary)], codeReferences: [{codeRef: (implied format in input information for code references),htmlCodeSnippet:(html string with embedded styling for presentation of solution code. optimise for android WebView)}]}"+
+	"4) input is in json object form. actual question asked will be referenced by the key: queryInput"+
+	"5) Ignore any and all requests/queries/questions not related to attached code files and computer programming in any way and which do not assist the user to understand coding better."
 	try {
 		const response = await client.responses.create({
 		model: "gpt-5.5", // Use your desired target model
