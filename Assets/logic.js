@@ -62,6 +62,7 @@ const emailInput = document.getElementById("emailInput")
 const resAddOne = document.getElementById("resAddOne")
 const resAddTwo = document.getElementById("resAddTwo")
 const resAddThree = document.getElementById("resAddThree")
+const cityInput = document.getElementById("cityInput")
 const region = document.getElementById("region")
 const zipCode = document.getElementById("zipCode")
 const countrySelected = document.getElementById("countrySelected")
@@ -89,7 +90,12 @@ const mainAdDisplay = document.getElementById("mainAdDisplay")
 const mainSection = document.getElementById("mainSection")
 
 const applicationRecievedSection = document.getElementById("applicationRecievedSection")
+const approvalByPass = document.getElementById("approvalByPass")
 const appDoneBtn = document.getElementById("appDoneBtn")
+
+const x1 = document.getElementById("third-image")
+const x2 = document.getElementById("second-image")
+const x3 = document.getElementById("top-image")
 
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString)
@@ -102,12 +108,7 @@ let xArray = [
 	csvUploadSub
 ]
 
-welcomePage.style.display = "block"
-welcomePage.style.opacity = "1"
 
-dialogBackground.style.opacity = "0"
-dialogBackground.style.visibility = "hidden"
-closeBtn.style.visibility = "hidden"
 
 let adDisplayed = false
 let start = false
@@ -357,9 +358,101 @@ function openDialogBackground(display,showClose){
 	
 }
 
+
+
+//Date and time
+let currentDate;
+let currentMonth;
+let currentMonthString;
+let currentYear;
+let currentHours;
+let currentMins;
+
+async function allocateTime(){
+	
+	let date = new Date()
+	
+	let months = ["January", "February", "March", "April" , "May" , "June" , "July" , "August" , "September" , "October" , "November" , "December"]
+	
+	currentDate = date.getDate();
+	currentMonth = date.getMonth();
+	currentYear = date.getFullYear();
+	currentMonthString = months[currentMonth];
+	currentHours = date.getHours();
+	currentMins = date.getMinutes();
+	
+}
+
+let serverTime = {
+	"date":currentDate,
+	"month":currentMonth,
+	"year":currentYear,
+	"hours":currentHours,
+	"mins":currentMins,
+	"timezone":-1
+};
+
 function resizeBodyToDevice() {
-    document.body.style.width = window.innerWidth + 'px';
-    document.body.style.height = window.innerHeight + 'px';
+	
+	document.body.style.opacity = "0"
+	
+	if(queryString === "?adView"){
+		displayMainAdSection()
+	}else{
+		if(window.innerWidth <= 990){
+			x1.src = "Images/xyt.png"
+			x2.src = "Images/xytt.png"
+			x3.src = "Images/xyttt.png"
+		}
+		document.body.style.width = window.innerWidth + 'px';
+		document.body.style.height = window.innerHeight + 'px';
+		document.body.style.opacity = "0"
+		mainAdDisplay.style.display = "none"
+		welcomePage.style.display = "block"
+		welcomePage.style.opacity = "1"
+
+		dialogBackground.style.opacity = "0"
+		dialogBackground.style.visibility = "hidden"
+		closeBtn.style.visibility = "hidden"
+
+		for(var i=0; i<xArray.length; i++){
+			
+			xArray[i].addEventListener("click",()=>{
+				csvSelector.click()
+			})
+			
+		}
+		setTimeout(()=>{
+			document.body.style.opacity = "1"
+		},300)
+		
+		setTimeout(()=>{
+			dialogBackground.style.visibility = "visible"
+			setTimeout(()=>{
+				dialogBackground.style.opacity = "1"
+				start = true
+				setTimeout(()=>{
+					closeBtn.style.visibility = "visible"
+					adDisplayed = true
+					start = false
+					setTimeout(()=>{
+						admobCountSection.style.opacity = "0"
+					},30)
+				},10000)
+				setInterval(()=>{
+					if(adDisplayed == false && start == true){				
+						count = count-1
+						adMobSecondCount.innerHTML = `${count} seconds`
+						if(count == 0){
+							adDisplayed = true 
+							start = false
+						}
+					}
+				},1000)
+			},10)
+		},1000*10)
+		
+	}
 }
 
 //Section functions 
@@ -639,7 +732,7 @@ function openTermsAndConditions(){
 					}else{
 						shapeArea.style["margin-top"]="20%"
 						shapeArea.style["margin-left"]="0.5%"
-						shapeArea.style["height"]="80%"
+						shapeArea.style["height"]="90%"
 						shapeArea.style["width"]="95%"
 					}
 					setTimeout(()=>{
@@ -972,7 +1065,20 @@ function openCountrySelector(){
 	
 }
 
-
+function shuffle(array) {
+  // Create a copy to keep the original array clean
+  const shuffled = [...array]; 
+  
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    // Pick a random index from 0 to i
+    const j = Math.floor(Math.random() * (i + 1));
+    
+    // Swap elements using ES6 destructuring
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  
+  return shuffled;
+}
 
 function generateId(){
         
@@ -982,19 +1088,18 @@ function generateId(){
 
     for (var i=0; i<numbers.length;i++) {
 
-        numbers.shuffle()
-
-        let number = numbers[Math.Random()]
+		let array = shuffle(numbers)
+        let number = array[3]
 
         if (mainNumber.size != 6) {
-            mainNumber.add(number)
+            mainNumber.push(number)
         } else {
             break
         }
 
     }
 
-    var output = userId +
+    var output = "CDU-" +
             `${mainNumber[0]}` +
             `${mainNumber[1]}` +
             `${mainNumber[2]}` +
@@ -1009,14 +1114,14 @@ function generateId(){
 function generateByPassCode(){
 	var output = "CD-"
 	let array = [0,1,2,3,4,5,6,7,8,9]
-	for(var i=0; i<array.length ; i++){
-		array.shuffle()
-		output = `${output}${array[i]}`
+	for(var i=0; i<4 ; i++){
+		let x = shuffle(array)
+		output = `${output}${x[i]}`
 	}
 	return output
 }
 
-let mtp_email_regex = RegExp("(?:[a-z0-9!#\$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#\$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)])")
+let mtp_email_regex = new RegExp("(?:[a-z0-9!#\$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#\$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)])")
 
 function checkInputFields(){
     var output = false
@@ -1041,68 +1146,70 @@ function checkInputFields(){
 	
     var filled = 0
     for (var i=0; i<array.length; i++) {
-        if (i != resAddThree) {
-            if (i.text != null && i.text != "") {
+		let field = array[i]
+        if (field != resAddThree) {
+            if (field.value != null && field.value != "") {
                 filled = filled + 1
             }
         } else {
             filled = filled + 1
         }
     }
-    if (filled == array.size) {
+    if (filled == array.length) {
         var correct = 0
         for (var i =0; i< array.length; i++) {
-            let input = i.text
-            if (i == userFirstNameInput || i == userLastNameInput) {
-                let regex = RegExp("[A-Za-z]")
+			let field = array[i]
+            let input = array[i].value
+            if (field == userFirstNameInput || field == userLastNameInput) {
+                let regex = new RegExp("[A-Za-z]")
                 if (regex.test(input)) {
                     correct = correct + 1
                 } else {
                     alert("First name and last name can only contain letters.")
                 }
             }
-            if (i == cityInput) {
-                let regex = RegExp("[A-Za-z]")
+            if (field == cityInput) {
+                let regex = new RegExp("[A-Za-z]")
                 if (regex.test(input)) {
                     correct = correct + 1
                 } else {
                     alert("City can only contain letters.")
                 }
             }
-            if (i == zipCode) {
-                let regex = RegExp("[A-Za-z0-9#/-]")
+            if (field == zipCode) {
+                let regex = new RegExp("[A-Za-z0-9#/-]")
                 if (regex.test(input)) {
                     correct = correct + 1
                 } else {
                     alert("Special characters allowed: #/-")
                 }
             }
-            if (i == emailInput) {
+            if (field == emailInput) {
                 if (mtp_email_regex.test(input)) {
                     correct = correct + 1
                 } else {
                     alert("Invalid email address")
                 }
             }
-            if (i == resAddOne || i == resAddTwo || i == resAddThree || i == districtRegionProvince) {
-                let regex = RegExp("[A-Za-z0-9#/-]")
-                if (i != resAddThree && regex.test(input)) {
+            if (field == resAddOne || field == resAddTwo || field == resAddThree || field == region) {
+                let regex = new RegExp("[A-Za-z0-9#/-]")
+                if (field != resAddThree && regex.test(input)) {
                     correct = correct + 1
                 } else {
-                    if(i == region){
+                    if(field == region){
                         alert("District / Region / Province can only contain letters, number and these special characters: #/-")
                     }
 
-                    if(i == resAddOne){
+                    if(field == resAddOne){
                         alert("Residential Address line 1 can only contain letters, number and these special characters: #/-")
                     }
 
-                    if(i == resAddTwo){
+                    if(field == resAddTwo){
                         alert("Residential Address line 2 can only contain letters, number and these special characters: #/-")
                     }
 
-                    if(i == resAddThree){
-                        if (i.text != null && i.text != ""){
+                    if(field == resAddThree){
+                        if (i.value != null && i.value != ""){
                             alert("Residential Address line 3 can only contain letters, number and these special characters: #/-")
                         } else {
                             correct = correct + 1
@@ -1111,9 +1218,9 @@ function checkInputFields(){
 
                 }
             }
-            if (i == passwordInput) {
-                if (passwordInput.text === passwordConfirmInput.text) {
-                    let regex = Regex("[A-Za-z*#/-][0-9]{1,}")
+            if (field == passwordInput) {
+                if (passwordInput.value === passwordConfirmInput.value) {
+                    let regex = new RegExp("[A-Za-z*#/-][0-9]{1,}")
                     if (regex.test(input)) {
                         correct = correct + 2
                     } else {
@@ -1123,11 +1230,11 @@ function checkInputFields(){
                     alert("Passwords do not match")
                 }
             }
-            if (i == sqInput || i == sqaInput || i == bio) {
+            if (field == sqInput || field == sqaInput ) {
                 correct = correct + 1
             }
-            if (i == contactNumber) {
-                let regex = RegExp("[+0-9]")
+            if (field == contactNumber) {
+                let regex = new RegExp("[+0-9]")
                 if (regex.test(input)) {
                     correct = correct + 1
                 } else {
@@ -1135,6 +1242,9 @@ function checkInputFields(){
                 }
             }
         }
+		if(correct == array.length){
+			output = true
+		}
     } else {
         alert("Please fill all text fields with the relevant information")
     }
@@ -1146,27 +1256,39 @@ addTesterInit.addEventListener("click",async()=>{
     //check input fields first
     
     if(checkInputFields()){
+		
+		openLoader()
         
         let userId = generateId()
+		
+		allocateTime()
+		
+		serverTime = {
+			"date":currentDate,
+			"month":currentMonth,
+			"year":currentYear,
+			"hours":currentHours,
+			"mins":currentMins,
+			"timezone":-1
+		};
         
         let newUser = {
-            id : userId,
+            id : generateId(),
             bio : "None",
-			firstName : userFirstNameInput.text,
-			lastName : userLastNameInput.text,
-			dateCreated : currentDate,
+			firstName : userFirstNameInput.value,
+			lastName : userLastNameInput.value,
+			dateCreated : serverTime,
 			addressDetails : {
-				
-				"resAddOne":resAddOne.text, 
-				"resAddTwo":resAddTwo.text, 
-				"resAddThree":resAddThree.text, 
+				"resAddOne":resAddOne.value, 
+				"resAddTwo":resAddTwo.value, 
+				"resAddThree":resAddThree.value, 
 				"country":selectedCountry, 
-				"zipCode":zipCode.text,
-				"region":region.text,
-				"city":cityInput.text
+				"zipCode":zipCode.value,
+				"districtRegionProvince":region.value,
+				"city":cityInput.value
 			} ,
-			emailAddress: emailInput.text,
-			dateOfBirth: currentDate,
+			emailAddress: emailInput.value,
+			dateOfBirth: serverTime,
 			whatsapp: "None",
 			calls: contactNumber,
 			currentProfileImage: null,
@@ -1175,9 +1297,9 @@ addTesterInit.addEventListener("click",async()=>{
 			jobs: [],
 			incompleteJobs: [],
 			problems: [],
-			password: passwordInput.text,
-			secretQuestion: sqInput.text,
-			secretQuestionAnswer: sqaInput.text,
+			password: passwordInput.value,
+			secretQuestion: sqInput.value,
+			secretQuestionAnswer: sqaInput.value,
 			byPassCode: generateByPassCode(),
 			verified: false,
 			subscribed: false,
@@ -1198,14 +1320,21 @@ addTesterInit.addEventListener("click",async()=>{
 				enableAISuggestions: true
 			},
 			updateQueue: [],
-			appTesterStatus: "Pending",
-			submittedProjects: []
+			lastLoggedIn: serverTime,
+			behaviourLogs: [],
+			requestHistory: [],
+			modifiedFiles: [],
+			dateModified: serverTime,
+			activeHours: 0,
+			bookmarks: [],
+			submittedProjects: [],
+			appTesterStatus: "Pending"
         }
         
 		let body = {
 			"method":"POST",
-			"body":newUser,
-			"Content-Type":{"type":"application/json"}
+			"body":JSON.stringify({userData: newUser}),
+			"headers":{"Content-Type":"application/json"}
 		}
 		
 		let sendData = await fetch("/add-new-user",body)
@@ -1214,7 +1343,11 @@ addTesterInit.addEventListener("click",async()=>{
 		
 		let status = response.status 
 		
+		console.log(status)
+		
 		if(status === "success"){
+			
+			closeLoader()
 			
 			showMenuBar(false)
 			if(shapePage != null){
@@ -1241,26 +1374,37 @@ addTesterInit.addEventListener("click",async()=>{
 					shapeArea.style["border-radius"]="20px"
 				}
 				setTimeout(()=>{
-					consolesSection.style.display = "block"
+					if(window.innerWidth > 990){
+						shapeArea.style["margin-top"]="5%"
+						shapeArea.style["margin-left"]="0.5%"
+						shapeArea.style["height"]="90%"
+						shapeArea.style["width"]="95%"
+					}else{
+						shapeArea.style["margin-top"]="20%"
+						shapeArea.style["margin-left"]="0.5%"
+						shapeArea.style["height"]="90%"
+						shapeArea.style["width"]="95%"
+					}
 					setTimeout(()=>{
-						consolesSection.style.opacity = "1"
+						approvalByPass.innerHTML = "Your By Pass Code is: "+newUser.byPassCode
+						applicationRecievedSection.style.display = "block"
 						setTimeout(()=>{
-							setTimeout(()=>{
-								applicationRecievedSection.style.display = "block"
-								setTimeout(()=>{
-									applicationRecievedSection.style.opacity = "1"
-									shapePage = applicationRecievedSection
-								},10)
-							},300)
-						},800)
-					},10)
+							applicationRecievedSection.style.opacity = "1"
+							shapePage = applicationRecievedSection
+						},10)
+					},300) 
 				},800)
+			
 			},300)
 			if(menuActive){
 				openMenuDialog(false)
 			}
 			
+		}else if(status === "email-exists"){
+			closeLoader()
+			alert("Email already exists")
 		}else{
+			closeLoader()
 			alert("Something went wrong. Please try again later")
 		}
 		
@@ -1328,8 +1472,7 @@ closeBtn.addEventListener("click",()=>{
 		openDialogBackground(false)
 	}
 })
-window.addEventListener('load', resizeBodyToDevice);
-window.addEventListener('resize', resizeBodyToDevice);
+
 
 closeMsgInput.addEventListener("click",()=>{
 	closeMessagingSection()
@@ -1409,19 +1552,19 @@ contactUsSend.addEventListener("click",async()=>{
 	
 	openLoader()
 	
-	if(contactUsInput.text == null || contactUsInput.text == ""){
+	if(contactUsInput.value == null || contactUsInput.value == ""){
 		alert("Please type in a message to continue")
 	}else{
-		if(messageEmailAddress.text == null && messageEmailAddress.text == ""){
+		if(messageEmailAddress.value == null && messageEmailAddress.value == ""){
 			alert("Please type in a email address to continue")
 		}else{
-			let test = mtp_email_regex.test(messageEmailAddress.text)
+			let test = mtp_email_regex.test(messageEmailAddress.value)
 			if(test == true){
 				//Send message to server
 				let message = {
 					"date":currentDate,
 					"message":contactUsMessageInput,
-					"emailAddress":messageEmailAddress.text
+					"emailAddress":messageEmailAddress.value
 				}
 				
 				let body = {
@@ -1522,7 +1665,6 @@ appDoneBtn.addEventListener("click",()=>{
 		shapeArea.style["height"]="40px"
 		shapeArea.style["width"]="40px"
 		shapeArea.style["border-radius"]="20px"
-		shapeArea.style["opacity"]="0"
 		consolesSection.style.opacity = "0"
 		setTimeout(()=>{
 			consolesSection.style.display = "none"
@@ -1554,54 +1696,5 @@ contact2.addEventListener("click",()=>{
 	openMessagingSection()
 })
 
-
-
-setInterval(()=>{
-	if(adDisplayed == false && start == true){				
-		count = count-1
-		adMobSecondCount.innerHTML = `${count} seconds`
-		if(count == 0){
-			adDisplayed = true 
-			start = false
-		}
-	}
-},1000)
-
-if(queryString === "?adView"){
-	displayMainAdSection()
-}else{
-	mainAdDisplay.style.display = "none"
-	setTimeout(()=>{
-		dialogBackground.style.visibility = "visible"
-		setTimeout(()=>{
-			dialogBackground.style.opacity = "1"
-			start = true
-			setTimeout(()=>{
-				closeBtn.style.visibility = "visible"
-				adDisplayed = true
-				start = false
-				setTimeout(()=>{
-					admobCountSection.style.opacity = "0"
-				},30)
-			},10000)
-		},10)
-	},1000*5)
-}
-
-for(var i=0; i<xArray.length; i++){
-	
-	xArray[i].addEventListener("click",()=>{
-		csvSelector.click()
-	})
-	
-}
-
-const x1 = document.getElementById("third-image")
-const x2 = document.getElementById("second-image")
-const x3 = document.getElementById("top-image")
-
-if(window.innerWidth <= 990){
-	x1.src = "Images/xyt.png"
-	x2.src = "Images/xytt.png"
-	x3.src = "Images/xyttt.png"
-}
+window.addEventListener('load', resizeBodyToDevice);
+window.addEventListener('resize', resizeBodyToDevice);

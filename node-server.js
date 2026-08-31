@@ -18,6 +18,7 @@ import {spawn} from "child_process";
 import dns from 'dns'
 import { MongoClient } from 'mongodb'
 import nodemailer from 'nodemailer'
+import { pipeline } from 'node:stream/promises'
  // Enable command monitoring for debugging
 /* 
 const mongoClient = new MongoClient('mongodb+srv://shopmatesales:N6Npa7vcMIaBULIS@cluster0.mgv7t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', { monitorCommands: true });
@@ -304,19 +305,25 @@ function checkTime(date){
 }	
 
 
-app.post("/check-time",async(request,response)=>{
-	let data = request.body
-	
-	await timeProcessor()
-	
-	console.log(serverTime,data)
-	
-	let check = checkTime(data)
-	
-	if( check == true){
-		response.send(JSON.stringify({"status":true}))
-	}else{
-	    response.send(JSON.stringify({"status":false}))
+app.post("/check-time",async(request,response,next)=>{
+	try{		
+		let data = request.body
+		response.setHeader("Content-Type","application/json")
+		
+		await timeProcessor()
+		
+		console.log(serverTime,data)
+		
+		let check = checkTime(data)
+		
+		if( check == true){
+			response.send(JSON.stringify({"status":true}))
+		}else{
+			response.send(JSON.stringify({"status":false}))
+		}
+	}catch(error){
+		next(error)
+		console.log(error)
 	}
 })
 
@@ -328,7 +335,8 @@ async function getActiveUsers(){
     try{
         let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
 		output = getSockets.body 
-    }catch{
+    }catch(error){
+		console.log(error)
         output = null
     }
     return output
@@ -337,7 +345,8 @@ async function getActiveUsers(){
 async function updateActiveSockets(sockets){
     try{
         await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body" : sockets}})
-    }catch{
+    }catch(error){
+		console.log(error)
         console.log("An error occurred while processing user sockets")
     }
 }
@@ -346,7 +355,7 @@ const activateUserSocket = async(userId,deviceId)=>{
     
 	let activeUsers = await getActiveUsers()
     let search = activeUsers.find((activeUsers)=>{
-        return activeUsers.userId === userId
+        return activeUsers.id === userId
     })
 	if(deviceId === search.deviceId){		
 		search.active = true
@@ -380,7 +389,7 @@ const getUserSocket = async(userId)=>{
     let activeSockets = await getActiveUsers()
     
     let search = activeSockets.find((activeSockets)=>{
-        return activeSockets.userId === userId
+        return activeSockets.id === userId
     })
     if(search){
         output = search
@@ -391,29 +400,37 @@ const getUserSocket = async(userId)=>{
 
 const getUserSocketObject = async(userId)=>{
     var output = null 
-    
-    let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
-	let sockets = getSockets.body
-    
-    let search = sockets.find((sockets)=>{
-        return sockets.userId === userId
-    })
-    if(search){
-        output = search
-    }
+    try{			
+		let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+		let sockets = getSockets.body
+		
+		let search = sockets.find((sockets)=>{
+			return sockets.userId === userId
+		})
+		if(search){
+			output = search
+		}
+	}
+	catch(error){
+		console.log(error)
+	}
     
     return output
 }
 const updateUserSocket = async(socket)=>{
-    let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
-	let sockets = getSockets.body
-    
-    let index = sockets.findIndex((sockets)=>{
-        return sockets.userId === socket.userId
-    })
-    sockets.splice(index,1,socket)
-	
-	await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
+	try{		
+		let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+		let sockets = getSockets.body
+		
+		let index = sockets.findIndex((sockets)=>{
+			return sockets.userId === socket.userId
+		})
+		sockets.splice(index,1,socket)
+		
+		await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
+	}catch(error){
+		console.log(error)
+	}
 }
 
 const loginSocketFunction = async(userId)=>{
@@ -439,11 +456,12 @@ const checkIfSocketActive = async(userId,deviceId)=>{
 	let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
     let activeSockets = getSockets.body
     let search = activeSockets.find((activeSockets)=>{
-        return activeSockets.userId === userId
+        return activeSockets.id === userId
     })
 	
 	if(deviceId){		
 		if(search){
+			console.log("------------->"+search)
 			if(search.active == true && search.deviceId === deviceId){
 				output = true
 			}
@@ -474,12 +492,12 @@ io.on("connection", (socket)=>{
 			let sockets = getSockets.body 
 			
 			let socket = sockets.find((sockets)=>{
-				return sockets.userId === accessorId
+				return sockets.id === accessorId
 			})
 			
 			socket.ownerId = data.ownerId 
-			socket.format = data.format 
-			socket.id = data.id
+			socket.mediaFormat = data.format 
+			socket.mediaId = data.id
 			
 			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
 			
@@ -510,7 +528,8 @@ io.on("connection", (socket)=>{
 					console.log("Problem data not found")
 				}
 			}
-		}catch{
+		}catch(error){
+			console.log(error)
 			console.log("An error occurred while updating problem data")
 		}
 	})
@@ -537,7 +556,8 @@ io.on("connection", (socket)=>{
 					console.log("Job data not found")
 				}
 			}
-		}catch{
+		}catch(error){
+			console.log(error)
 			console.log("An error occurred while updating job data")
 		}
 	})
@@ -563,7 +583,7 @@ io.on("connection", (socket)=>{
 	},1000*60)
 	
 	socket.on("ping-back",(data)=>{
-		activateUserSocket(data.userId,deviceId)
+		activateUserSocket(data.userId,data.deviceId)
 	});
 	
 	
@@ -639,7 +659,8 @@ async function updateAdminDataController(){
 			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"admin-data-controller"},{$set:{"body":adminData}})
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		console.log("Error updating admin data controller")
 	}
 	
@@ -669,7 +690,7 @@ async function getRates(){
 		
 		let get = await fetch("https://www.floatrates.com/daily/usd.json")
 		
-		let response = await get.json()
+		let response = await get.JSON.stringify()
 		
 		await mongoClient.db("CriterionDev").collection("Main").updateOne({"name":"exchange-rates"},{$set:{"body":response}})
 		
@@ -740,7 +761,8 @@ let processMap = async(array,map)=>{
 		}else{
 			setTimeout(()=>{processMap(array,map)},10000)
 		}
-	}catch{
+	}catch(error){
+		console.log(error)
 		output = null
 	}
 	
@@ -749,31 +771,39 @@ let processMap = async(array,map)=>{
 }
 
 app.get("/get-leap-year",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"leap-year-status"})
-		response.send(json({"status":getData.status}))
-	}catch{
-		response.send(json({"status":"server-error"}))
+		response.send(JSON.stringify({"status":getData.status}))
+	}catch(error){
+		console.log(error)
+		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/check-time", async(request,response)=>{
-	let data = request.body
-	
-	await timeProcessor()
-	
-	console.log(serverTime,date)
-	
-	let check = checkTime(data)
-	
-	if( check == true){
-		response.send(JSON.stringify({"status":true}))
-	}else{
-	    response.send(JSON.stringify({"status":false}))
+	response.setHeader("Content-Type","application/json")
+	try{		
+		let data = request.body
+		
+		await timeProcessor()
+		
+		console.log(serverTime,date)
+		
+		let check = checkTime(data)
+		
+		if( check == true){
+			response.send(JSON.stringify({"status":true}))
+		}else{
+			response.send(JSON.stringify({"status":false}))
+		}
+	}catch(error){
+		console.log(error)
 	}
 })
 
 app.post("/get-conversion",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body
@@ -790,22 +820,26 @@ app.post("/get-conversion",async(request,response)=>{
 			response.send(JSON.stringify({"status": "server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.get("/process-payment",async(request,response)=>{
+	response.setHeader("Content-Type","text/html; charset=utf-8")
     try{
         response.sendFile(__dirname+"/paymentsection.html") 
-    }catch{
+    }catch(error){
+		console.log(error)
         response.send(JSON.stringify({"status":"server-error"}))
     }
 })
 app.get("/",async(request,response)=>{
     try{
         response.sendFile(__dirname+"/CollectionConsole.html") 
-    }catch{
+    }catch(error){
+		console.log(error)
         response.send(JSON.stringify({"status":"server-error"}))
     }
 })
@@ -814,21 +848,25 @@ app.get("/",async(request,response)=>{
 
 function createUserDirectories(user){
     var output = false
-    var userId = user.userId
-    fs.mkdir(__dirname+`/User Data/${userId}`, (error)=>{
+    var userId = user.id
+    fs.mkdir(__dirname+`/UserData/${userId}`, (error)=>{
         if(!error) {
-            fs.mkdir(__dirname+`/User Data/${userId}/Images`, (error)=>{
+            fs.mkdir(__dirname+`/UserData/${userId}/Images`, (error)=>{
                 if(!error){
-                    fs.mkdir(__dirname+`/User Data/${userId}/Videos`, (error)=>{
+                    fs.mkdir(__dirname+`/UserData/${userId}/Videos`, (error)=>{
                         if(!error){
-                            fs.mkdir(__dirname+`/User Data/${userId}/Audio`, (error)=>{
+                            fs.mkdir(__dirname+`/UserData/${userId}/Audio`, (error)=>{
                                 if(!error){
-                                    fs.mkdir(__dirname+`/User Data/${userId}/HLSPlaylists`, (error)=>{
+                                    fs.mkdir(__dirname+`/UserData/${userId}/HLSPlaylists`, (error)=>{
                                         if(!error){
-                                            fs.mkdir(__dirname+`/User Data/${userId}/Data`, (error)=>{
+                                            fs.mkdir(__dirname+`/UserData/${userId}/Data`, (error)=>{
                                                 if(!error){
-                                                    fs.mkdir(__dirname+`/User Data/${userId}/Businesses`, (error)=>{
-                                                        output = true
+                                                    fs.mkdir(__dirname+`/UserData/${userId}/Businesses`, (error)=>{
+                                                       if(!error){
+															output = true
+														}else{
+															console.log(error)
+														}
                                                     })
                                                 }else{
                                                     console.log(error)
@@ -856,85 +894,45 @@ function createUserDirectories(user){
     })
     
     
-    if(output == true){
-        //Create video directories 
-        fs.mkdir(path.join(__dirname+`/User Data/${userId}/144videos`, (error)=>{
-            if(error){
-                console.log(error)
-            }else{
-                fs.mkdir(path.join(__dirname+`/User Data/${userId}/240videos`, (error)=>{
-                    if(error){
-                        console.log(error)
-                    }else{
-                        fs.mkdir(path.join(__dirname+`/User Data/${userId}/360videos`, (error)=>{
-                            if(error){
-                                console.log(error)
-                            }else{
-                                fs.mkdir(path.join(__dirname+`/User Data/${userId}/480videos`, (error)=>{
-                                    if(error){
-                                        console.log(error)
-                                    }else{
-                                        fs.mkdir(path.join(__dirname+`/User Data/${userId}/720videos`, (error)=>{
-                                            if(error){
-                                                console.log(error)
-                                            }else{
-                                                fs.mkdir(path.join(__dirname+`/User Data/${userId}/1080videos`, (error)=>{
-                                                    if(error){
-                                                        output = false
-                                                        console.log(error)
-                                                    }
-                                                }))
-                                            }
-                                        }))
-                                    }
-                                }))
-                            }
-                        }))
-                    }
-                }))
-            }
-        }))
-    }
-    
     return output
 }
 
 //Orignal Code 
 
 app.post("/login-user", async(request,response)=>{
-	
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
 		let emailAddress = data.emailAddress 
 		let password = data.password 
 		let deviceId = data.deviceId
-		
 		let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
 		let users = getUsers.body 
 		let search = users.find((users)=>{
-			
 			return users.emailAddress === emailAddress
-			
 		})
+		
+		console.log(emailAddress)
 		
 		if(search){
 			if(search.password === password){
 				let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
 				let sockets = getSockets.body 
 				let socket = sockets.find((sockets)=>{
-					return sockets.userId === user.id
+					return sockets.id === search.id
 				})
+				console.log(sockets)
 				if(socket){
 					socket.deviceId = deviceId 
 					socket.active = true 
 					socket.alreadyLoggedIn = true
-					
+					console.log(socket)
 					await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
 					if(search.accountStatus =="Active"){						
-						response.send(json({"status":"success","data":search}))
+						response.send(JSON.stringify({"status":"success","data":search}))
 					}else{
-						response.send(json({"status":"unavailable"}))
+						response.send(JSON.stringify({"status":"unavailable"}))
 					}
 					
 				}else{
@@ -947,16 +945,36 @@ app.post("/login-user", async(request,response)=>{
 			response.send(JSON.stringify({"status":"non-existent"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 	
 })
 
 
-
+async function checkEmails(email){
+	let output = null
+	try{
+		let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+		let users = getUsers.body 
+		let search = users.find((users)=>{
+			return users.emailAddress === email
+		})
+		if(search){
+			output = true
+		}else{
+			output = false
+		}
+	}catch(error){
+		console.log(error)
+		false
+	}
+	return output
+}
 
 app.post("/add-new-user", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -971,25 +989,21 @@ app.post("/add-new-user", async(request,response)=>{
 			await addUserSocket(newUser.id,"user", data.deviceId)
 			
 			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
-			let process = await  createUserDirectories(newUser.id)
-			if(process == true){
-				
-				response.send(JSON.stringify({"status":"success","data":newUser}))
-				
-			}else{
-				response.send(JSON.stringify({"status":"server-error"}))
-			}
+			await  createUserDirectories(newUser)
+			response.send(JSON.stringify({"status":"success","data":newUser}))
 			
 		}else{
 			response.send(JSON.stringify({"status":"email-exists"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/find-secret-question",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1005,12 +1019,14 @@ app.post("/find-secret-question",async(request,response)=>{
 			response.send(JSON.stringify({"status":"not-found"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/change-secret-question", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1040,12 +1056,14 @@ app.post("/change-secret-question", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/get-user-by-email-address",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1060,12 +1078,14 @@ app.post("/get-user-by-email-address",async(request,response)=>{
 			response.send(JSON.stringify({"status":"not-found"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/change-email-address", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1093,12 +1113,14 @@ app.post("/change-email-address", async(request,response)=>{
 			
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/change-password", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1126,7 +1148,8 @@ app.post("/change-password", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -1191,6 +1214,7 @@ async function MtpCategorySorter(jobs,posts,hits){
 }
 
 app.post("/get-categories-all", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1207,7 +1231,8 @@ app.post("/get-categories-all", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -1244,6 +1269,7 @@ async function SortProblemCategories(problems){
 }
 
 app.post("/get-all-problem-categories", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		let data = request.body
 		let userId = data.userId 
@@ -1258,7 +1284,8 @@ app.post("/get-all-problem-categories", async(request,response)=>{
 		}else{			
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -1266,162 +1293,164 @@ app.post("/get-all-problem-categories", async(request,response)=>{
 async function FilterJobsByCategory(category,jobs,oldestNewest){
 	
 	let output = []
-	for(var i=0; i<jobs.length; i++){
-		let job = jobs[i]
-		let language = job.language 
-		if(category === "All"){
-			output.push(job)
-		}else{
-			if(job.language === category){
+	if(jobs.length > 0){
+		for(var i=0; i<jobs.length; i++){
+			let job = jobs[i]
+			let language = job.language 
+			if(category === "All"){
 				output.push(job)
+			}else{
+				if(job.language === category){
+					output.push(job)
+				}
 			}
 		}
-	}
-	//sort jobs selected by number of opens 
-	//let the order be in descending order to give jobs with less views chance to be seen 
-	output.sort((a,b)=>{
-		b.opens - a.opens
-	})
-	//sort for time 
-	let yearsArray = []
-	for(var i=0; i<output.length; i++){
-		let job = output[i]
-		let date = job.dateCreated 
-		let year = date.year 
-		let search = yearsArray.find((yearsArray)=>{
-			return yearsArray.year == year
+		//sort jobs selected by number of opens 
+		//let the order be in descending order to give jobs with less views chance to be seen 
+		output.sort((a,b)=>{
+			b.opens - a.opens
 		})
-		if(!search){
-			yearsArray.push({
-				"year":year,
-				"jobs":[]
-			})
-		}
-	}
-	
-	for(var i=0; i< yearsArray.length; i++){
-		let year = yearsArray[i]
-		for(var x=0; x<output.length; x++){
-			let job = output[x]
+		//sort for time 
+		let yearsArray = []
+		for(var i=0; i<output.length; i++){
+			let job = output[i]
 			let date = job.dateCreated 
-			if(date.year == year){
-				let y = yearsArray.find((yearsArray)=>{
-					return yearsArray.year
+			let year = date.year 
+			let search = yearsArray.find((yearsArray)=>{
+				return yearsArray.year == year
+			})
+			if(!search){
+				yearsArray.push({
+					"year":year,
+					"jobs":[]
 				})
-				y.jobs.push(job)
 			}
 		}
+		
+		for(var i=0; i< yearsArray.length; i++){
+			let year = yearsArray[i]
+			for(var x=0; x<output.length; x++){
+				let job = output[x]
+				let date = job.dateCreated 
+				if(date.year == year){
+					let y = yearsArray.find((yearsArray)=>{
+						return yearsArray.year
+					})
+					y.jobs.push(job)
+				}
+			}
+		}
+		
+		//sort each year collection by month 
+		for(var i=0; i<yearsArray.length; i++){
+			let targetYear = yearsArray[i].jobs 
+			if(oldestNewest == true){
+				targetYear.sort((a,b)=>{
+					a.dateCreated.month - b.dateCreated.month
+				})
+				yearsArray[i].jobs = targetYear
+			}else{
+				targetYear.sort((a,b)=>{
+					b.dateCreated.month - a.dateCreated.month
+				})
+				yearsArray.jobs = targetYear
+			}
+		}
+		
+		//sort each month for dates 
+		for(var i=0; i<yearsArray.length; i++){
+			let year = yearsArray[i]
+			let months = {
+				"jan":[],
+				"feb":[],
+				"march":[],
+				"apr":[],
+				"may":[],
+				"june":[],
+				"july":[],
+				"aug":[],
+				"sept":[],
+				"oct":[],
+				"nov":[],
+				"dec":[]
+			}
+			
+			let jobs = year.jobs 
+			for(var x=0; x<jobs.length; x++){
+				let job = jobs[x]
+				if(job.dateCreated.month == 0){
+					months["jan"].push(job)
+				}
+				if(job.dateCreated.month == 1){
+					months["feb"].push(job)
+				}
+				if(job.dateCreated.month == 2){
+					months["march"].push(job)
+				}
+				if(job.dateCreated.month == 3){
+					months["apr"].push(job)
+				}
+				if(job.dateCreated.month == 4){
+					months["may"].push(job)
+				}
+				if(job.dateCreated.month == 5){
+					months["june"].push(job)
+				}
+				if(job.dateCreated.month == 6){
+					months["july"].push(job)
+				}
+				if(job.dateCreated.month == 7){
+					months["aug"].push(job)
+				}
+				if(job.dateCreated.month == 8){
+					months["sept"].push(job)
+				}
+				if(job.dateCreated.month == 9){
+					months["oct"].push(job)
+				}
+				if(job.dateCreated.month == 10){
+					months["nov"].push(job)
+				}
+				if(job.dateCreated.month == 11){
+					months["dec"].push(job)
+				}
+			}
+			
+			let monthKeys = months.keys
+			
+			
+			for(var x=0; x<monthKeys.length;x++){
+				let key = monthKeys[x]
+				months[key].sort((a,b)=>{
+					a.dateCreated.date - b.dateCreated.date
+				})
+			}
+			
+			let finalArray = []
+			
+			for(var x=0; x<monthKeys.length; x++){
+				let key = monthKeys[x]
+				let jobsx = months[key]
+				for(var y=0; y<jobs.length; y++){
+					let job = jobsx[y]
+					finalArray.push(job)
+				}
+			}
+			yearsArray[i].jobs = finalArray
+			
+		}
+		
+		//reorganise years array back into one single array 
+		let finalOutput = []
+		for(var i=0; i < yearsArray.length; i++){
+			let jobs = yearsArray[i].jobs 
+			for(var x=0; x<yearsArray.length; x++){
+				let job = jobs[x]
+				finalOutput.push(job)
+			}
+		}
+		
 	}
-	
-	//sort each year collection by month 
-	for(var i=0; i<yearsArray.length; i++){
-		let targetYear = yearsArray[i].jobs 
-		if(oldestNewest == true){
-			targetYear.sort((a,b)=>{
-				a.dateCreated.month - b.dateCreated.month
-			})
-			yearsArray[i].jobs = targetYear
-		}else{
-			targetYear.sort((a,b)=>{
-				b.dateCreated.month - a.dateCreated.month
-			})
-			yearsArray.jobs = targetYear
-		}
-	}
-	
-	//sort each month for dates 
-	for(var i=0; i<yearsArray.length; i++){
-		let year = yearsArray[i]
-		let months = {
-			"jan":[],
-			"feb":[],
-			"march":[],
-			"apr":[],
-			"may":[],
-			"june":[],
-			"july":[],
-			"aug":[],
-			"sept":[],
-			"oct":[],
-			"nov":[],
-			"dec":[]
-		}
-		
-		let jobs = year.jobs 
-		for(var x=0; x<jobs.length; x++){
-			let job = jobs[x]
-			if(job.dateCreated.month == 0){
-				months["jan"].push(job)
-			}
-			if(job.dateCreated.month == 1){
-				months["feb"].push(job)
-			}
-			if(job.dateCreated.month == 2){
-				months["march"].push(job)
-			}
-			if(job.dateCreated.month == 3){
-				months["apr"].push(job)
-			}
-			if(job.dateCreated.month == 4){
-				months["may"].push(job)
-			}
-			if(job.dateCreated.month == 5){
-				months["june"].push(job)
-			}
-			if(job.dateCreated.month == 6){
-				months["july"].push(job)
-			}
-			if(job.dateCreated.month == 7){
-				months["aug"].push(job)
-			}
-			if(job.dateCreated.month == 8){
-				months["sept"].push(job)
-			}
-			if(job.dateCreated.month == 9){
-				months["oct"].push(job)
-			}
-			if(job.dateCreated.month == 10){
-				months["nov"].push(job)
-			}
-			if(job.dateCreated.month == 11){
-				months["dec"].push(job)
-			}
-		}
-		
-		let monthKeys = months.keys
-		
-		
-		for(var x=0; x<monthKeys.length;x++){
-			let key = monthKeys[x]
-			months[key].sort((a,b)=>{
-				a.dateCreated.date - b.dateCreated.date
-			})
-		}
-		
-		let finalArray = []
-		
-		for(var x=0; x<monthKeys.length; x++){
-			let key = monthKeys[x]
-			let jobsx = months[key]
-			for(var y=0; y<jobs.length; y++){
-				let job = jobsx[y]
-				finalArray.push(job)
-			}
-		}
-		yearsArray[i].jobs = finalArray
-		
-	}
-	
-	//reorganise years array back into one single array 
-	let finalOutput = []
-	for(var i=0; i < yearsArray.length; i++){
-		let jobs = yearsArray[i].jobs 
-		for(var x=0; x<yearsArray.length; x++){
-			let job = jobs[x]
-			finalOutput.push(job)
-		}
-	}
-	
 	return finalOutput
 	
 }
@@ -1429,178 +1458,186 @@ async function FilterJobsByCategory(category,jobs,oldestNewest){
 async function ProcessJobsByLocation(jobs,location){
 	let output = []
 	
-	if(location.city){		
-		for(var i=0; i<jobs.length; i++){
-			let job = jobs[i]
-			let locale = job.location
-			if(locale.city.toLowerCase() === location.city.toLowerCase()){
-				let search = output.find((output)=>{
-					return output.id === job.id
-				})
-				if(!search){
-					output.push(job)
-				}
-			}
-		}
-	}
-	if(location.country){
-		for(var i=0; i<jobs.length; i++){
-			let job = jobs[i]
-			let locale = job.location 
-			if(locale.country.toLowerCase() === location.country.toLowerCase()){
-				let search = output.find((output)=>{
-					return output.id === job.id
-				})
-				if(!search){
-					output.push(job)
-				}
-			}
-		}
-	}
-	if(location.districtRegionProvince){
-		for(var i=0; i<jobs.length; i++){
-			let job = jobs[i]
-			let locale = job.location 
-			if(locale.districtRegionProvince.toLowerCase() === location.districtRegionProvince.toLowerCase()){
-				let search = output.find((output)=>{
-					return output.id === job.id
-				})
-				if(!search){
-					output.push(job)
-				}
-			}
-		}
-	}
 	
-	//Sort output for years 
-	let yearsCollection = []
-	
-	for(var i=0; i<output.length; i++){
-		let job = output[i]
-		let year = job.dateCreated.year 
-		let search = yearsCollection.find((yearsCollection)=>{
-			return yearsCollection.year == year
-		})
-		if(!search){
-			yearsCollection.push(
-				{
-					"year": year,
-					"jobs":[job]
-				}
-			)
-		}else{
-			search.jobs.push(job)
-		}
-	}
-	
-	//sort years collection for months 
-	for(var i=0; i<yearsCollection.length; i++){
+	if(jobs.length > 0){
 		
-		let array = yearsCollection[i].jobs 
-		array.sort((a,b)=>{
-			a.dateCreated.month - b.dateCreated.month
-		})
-		yearsCollection[i].jobs = array
+		//get jobs by locations first
 		
-	}
-	
-	let finalArray = []
-	
-	//sort for dates
-	for(var i=0; i<yearsCollection.length; i++){
-		let x = yearsCollection[i]
-		let monthsCollection = {
-			"jan":[],
-			"feb":[],
-			"march":[],
-			"apr":[],
-			"may":[],
-			"june":[],
-			"july":[],
-			"aug":[],
-			"sept":[],
-			"oct":[],
-			"nov":[],
-			"dec":[]
+		if(location.city){		
+			for(var i=0; i<jobs.length; i++){
+				let job = jobs[i]
+				let locale = job.location
+				if(locale.city.toLowerCase() === location.city.toLowerCase()){
+					let search = output.find((output)=>{
+						return output.id === job.id
+					})
+					if(!search){
+						output.push(job)
+					}
+				}
+			}
 		}
-		let array = x.jobs 
-		for(var y = 0; y<array.length; y++){
-			let job = array[y]
-			if(job.dateCreated.month == 0){
-				monthsCollection["jan"].push(job)
+		if(location.country){
+			for(var i=0; i<jobs.length; i++){
+				let job = jobs[i]
+				let locale = job.location 
+				if(locale.country.toLowerCase() === location.country.toLowerCase()){
+					let search = output.find((output)=>{
+						return output.id === job.id
+					})
+					if(!search){
+						output.push(job)
+					}
+				}
 			}
-			if(job.dateCreated.month == 1){
-				monthsCollection["feb"].push(job)
-			}
-			if(job.dateCreated.month == 2){
-				monthsCollection["march"].push(job)
-			}
-			if(job.dateCreated.month == 3){
-				monthsCollection["apr"].push(job)
-			}
-			if(job.dateCreated.month == 4){
-				monthsCollection["may"].push(job)
-			}
-			if(job.dateCreated.month == 5){
-				monthsCollection["june"].push(job)
-			}
-			if(job.dateCreated.month == 6){
-				monthsCollection["july"].push(job)
-			}
-			if(job.dateCreated.month == 7){
-				monthsCollection["aug"].push(job)
-			}
-			if(job.dateCreated.month == 8){
-				monthsCollection["sept"].push(job)
-			}
-			if(job.dateCreated.month == 9){
-				monthsCollection["oct"].push(job)
-			}
-			if(job.dateCreated.month == 10){
-				monthsCollection["nov"].push(job)
-			}
-			if(job.dateCreated.month == 11){
-				monthsCollection["dec"].push(job)
+		}
+		if(location.districtRegionProvince){
+			for(var i=0; i<jobs.length; i++){
+				let job = jobs[i]
+				let locale = job.location 
+				if(locale.districtRegionProvince.toLowerCase() === location.districtRegionProvince.toLowerCase()){
+					let search = output.find((output)=>{
+						return output.id === job.id
+					})
+					if(!search){
+						output.push(job)
+					}
+				}
 			}
 		}
 		
-		let monthKeys = monthsCollection.keys 
-		for(var y=0; y<monthKeys.length; y++){
-			let key = monthKeys[y]
-			monthCollection[key].sort((a,b)=>{
-				a.dateCreated.date - b.dateCreated.date
+		//Sort output for years 
+		let yearsCollection = []
+		
+		for(var i=0; i<output.length; i++){
+			let job = output[i]
+			let year = job.dateCreated.year 
+			let search = yearsCollection.find((yearsCollection)=>{
+				return yearsCollection.year == year
 			})
-			let array = monthCollection[key]
-			for(var t=0; t<array.length; t++){
-				finalOutput.push(array[t])
+			if(!search){
+				yearsCollection.push(
+					{
+						"year": year,
+						"jobs":[job]
+					}
+				)
+			}else{
+				search.jobs.push(job)
 			}
 		}
 		
+		//sort years collection for months 
+		for(var i=0; i<yearsCollection.length; i++){
+			
+			let array = yearsCollection[i].jobs 
+			array.sort((a,b)=>{
+				a.dateCreated.month - b.dateCreated.month
+			})
+			yearsCollection[i].jobs = array
+			
+		}
+		
+		let finalArray = []
+		
+		//sort for dates
+		for(var i=0; i<yearsCollection.length; i++){
+			let x = yearsCollection[i]
+			let monthsCollection = {
+				"jan":[],
+				"feb":[],
+				"march":[],
+				"apr":[],
+				"may":[],
+				"june":[],
+				"july":[],
+				"aug":[],
+				"sept":[],
+				"oct":[],
+				"nov":[],
+				"dec":[]
+			}
+			let array = x.jobs 
+			for(var y = 0; y<array.length; y++){
+				let job = array[y]
+				if(job.dateCreated.month == 0){
+					monthsCollection["jan"].push(job)
+				}
+				if(job.dateCreated.month == 1){
+					monthsCollection["feb"].push(job)
+				}
+				if(job.dateCreated.month == 2){
+					monthsCollection["march"].push(job)
+				}
+				if(job.dateCreated.month == 3){
+					monthsCollection["apr"].push(job)
+				}
+				if(job.dateCreated.month == 4){
+					monthsCollection["may"].push(job)
+				}
+				if(job.dateCreated.month == 5){
+					monthsCollection["june"].push(job)
+				}
+				if(job.dateCreated.month == 6){
+					monthsCollection["july"].push(job)
+				}
+				if(job.dateCreated.month == 7){
+					monthsCollection["aug"].push(job)
+				}
+				if(job.dateCreated.month == 8){
+					monthsCollection["sept"].push(job)
+				}
+				if(job.dateCreated.month == 9){
+					monthsCollection["oct"].push(job)
+				}
+				if(job.dateCreated.month == 10){
+					monthsCollection["nov"].push(job)
+				}
+				if(job.dateCreated.month == 11){
+					monthsCollection["dec"].push(job)
+				}
+			}
+			
+			let monthKeys = monthsCollection.keys 
+			for(var y=0; y<monthKeys.length; y++){
+				let key = monthKeys[y]
+				monthCollection[key].sort((a,b)=>{
+					a.dateCreated.date - b.dateCreated.date
+				})
+				let array = monthCollection[key]
+				for(var t=0; t<array.length; t++){
+					finalOutput.push(array[t])
+				}
+			}
+			
+		}
 	}
 	
 	return finalOutput
 }
 
 app.post("/get-jobs-by-category", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
 		let userId = data.userId 
-		let socketCheck = await checkIfSocketActive(userId)
-		let locationData = data.location
+		let location = data.location
+		let selectedCategory = data.selectedCategory
+		let deviceId = data.deviceId
+		let socketCheck = await checkIfSocketActive(userId,deviceId)
 		if(socketCheck == true){
-			
 			let getJobs = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"job-listings"})
 			let jobs = getJobs.body
 			let processForLocation = await ProcessJobsByLocation(jobs,location)
-			let selectedCategory = data.selectedCategory 
 			let output = await FilterJobsByCategory(jobs,selectedCategory,data.oldestNewest)
 			response.send(JSON.stringify({"status":"success","data":output}))
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -1617,25 +1654,56 @@ async function processForCategory(problems, category){
 	return output
 }
 
+async function ProcessProblemsByCategory(problems,selectedCategory){
+	let output = []
+	
+	if(problems.length > 0){
+		
+		for(var i=0; i<problems.length; i++){
+			
+			let problem = problems[i]
+			
+			//Categories are in fact languages
+			let language = problem.language
+			
+			if(selectedCategory === "All"){
+				output.push(problem)
+			}else{
+				if(language === selectedCategory){
+					output.push(problem)
+				}
+			}
+			
+		}
+		
+	}
+	
+	return output
+}
+
 app.post("/get-problems-by-category", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
 		let userId = data.userId 
 		let deviceId = data.deviceId 
+		let selectedCategory = data.selectedCategory
 		let socketCheck = await checkIfSocketActive(userId,deviceId)
-		let locationData = data.location
 		if(socketCheck == true){
 			
 			let getProblems = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
-			let problmes = getProblems.body
-			let processForCategory = await ProcessProblemsByCategory(problems,data.selectedCategory)
+			let problems = getProblems.body
+			let processForCategory = await ProcessProblemsByCategory(problems,selectedCategory)
+			console.log(processForCategory)
 			response.send(JSON.stringify({"status":"success","data":processForCategory}))
+		
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -1687,6 +1755,7 @@ async function FilterJobsBySearch(jobs,input){
 }
 
 app.post("/search-jobs-by-identifier", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1702,13 +1771,15 @@ app.post("/search-jobs-by-identifier", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 
 app.post("/add-new-job-listing", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1727,12 +1798,14 @@ app.post("/add-new-job-listing", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/check-subscription-status", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1761,7 +1834,8 @@ app.post("/check-subscription-status", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -1783,6 +1857,7 @@ async function generateSubID(){
 }
 
 app.post("/generate-new-subscription", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1824,7 +1899,8 @@ app.post("/generate-new-subscription", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error "}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error "}))
 	}
 })
@@ -1865,6 +1941,7 @@ async function getJobLocations(jobs,mode){
 }
 
 app.post("/get-job-locations", async()=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		let data = request.body
 		let mode = data.mode 
@@ -1883,12 +1960,14 @@ app.post("/get-job-locations", async()=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/update-job-object", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1918,12 +1997,14 @@ app.post("/update-job-object", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/update-forum-object", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -1953,19 +2034,57 @@ app.post("/update-forum-object", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
+
+
+async function notifyAllUsers(userId,users,problem,notificationId){
+	
+	let mainUser = users.find((users)=>{
+		return users.id === userId
+	})
+	
+	for(var i=0; i<users.length; i++){
+		let user = users[i]
+		
+		if(user.id != userId){
+			user.notifications.push({
+				"id": notificationId,
+				"date": problem.dateCreated,
+				"message": `${mainUser.firstName} ${mainUser.lastName} needs your help to solve a problem. Help to solve and improve your ranking. Tap to view the problem`,
+				"subject": "Alert: New Forum Problem Added",
+				"type": 2,
+				"response": null,
+				"project": null,
+				"job": null,
+				"forumObject": problem,
+				"submission": null,
+				"file": null,
+				"position": null,
+				"user": null,
+				"seen": false
+			})
+		}
+	}
+	
+}
+
 app.post("/add-new-problem", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
 		let userId = data.userId 
-		let socketCheck = await checkIfSocketActive(userId)
+		let deviceId = data.deviceId 
+		let socketCheck = await checkIfSocketActive(userId,deviceId)
 		
 		if(socketCheck == true){
+			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let users = getUsers.body
 			let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getForumData.body 
 			let problem = problems.find((problems)=>{
@@ -1975,6 +2094,7 @@ app.post("/add-new-problem", async(request,response)=>{
 				
 				problems.push(data.problem)
 				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
+				await notifyAllUsers(userId,users,data.problem,data.notificationId)
 				response.send(JSON.stringify({"status":"success"}))
 				
 			}else{
@@ -1984,12 +2104,40 @@ app.post("/add-new-problem", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
+		response.send(JSON.stringify({"status":"server-error"}))
+	}
+})
+
+app.post("/delete-forum-problem-data", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
+	try{
+		
+		let userId = data.userId 
+		let deviceId = data.deviceId 
+		let socketCheck = await checkIfSocketActive(userId,deviceId)
+		if(socketCheck == true){
+			let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let problems = getForumData.body 
+			let index = problems.findIndex((problems)=>{
+				return problems.id === data.problemId
+			})
+			problems.splice(index,1)
+			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
+			response.send(JSON.stringify({"status":"success"}))
+		}else{			
+			response.send(JSON.stringify({"status":"server-error"}))
+		}
+		
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/get-fresh-job-data",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -2012,12 +2160,14 @@ app.post("/get-fresh-job-data",async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/get-fresh-problem-data",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -2040,13 +2190,15 @@ app.post("/get-fresh-problem-data",async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
-
+/*This request is spare capacity for later use*/
 app.post("/post-problem-response", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -2069,7 +2221,7 @@ app.post("/post-problem-response", async(request,response)=>{
 				}) 
 				if(!search){					
 					problem.corresponders.push(data.responseData)
-					await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$se:{"body":problems}})
+					await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
 					response.send(JSON.stringify({"status":"success"}))
 				}else{
 					response.send(JSON.stringify({"status":"already-exists"}))
@@ -2081,12 +2233,14 @@ app.post("/post-problem-response", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/post-response-vote", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -2131,7 +2285,8 @@ app.post("/post-response-vote", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -2363,7 +2518,8 @@ async function ProcessForumProblems(userId,problems,category){
 			}
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		console.log("Problem generating problem array")
 	}
 }
@@ -2422,12 +2578,14 @@ app.post("/get-problems-by-cateogry", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/resolve-forum-problem", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -2463,7 +2621,8 @@ app.post("/resolve-forum-problem", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -2471,6 +2630,7 @@ app.post("/resolve-forum-problem", async(request,response)=>{
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 app.post("/get-forum problems-by-category",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -2489,32 +2649,94 @@ app.post("/get-forum problems-by-category",async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))			
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.get("/get-user-image/:id", async(request,response)=>{
     try{
+		const controller = new AbortController()
+		const {signal} = controller.signal
+		request.on("close",()=>{
+			stream.destroy()
+			controller.abort()
+		})
         let userId = request.params.id
 		let check = await checkIfSocketActive(userId)
         if(check == true){
             let socket = await getUserSocket(userId)
             let mediaId = socket.mediaId
             let mediaFormat = socket.mediaFormat
+			response.setHeader("Content-Type",`image/ ${mediaFormat}`)
             let ownerId = socket.ownerId
-            let stream = fs.createReadStream(__dirname+`/User Data/${ownerId}/Images/${mediaId}${mediaFormat}`)
-            stream.pipe(response)
+            let stream = fs.createReadStream(__dirname+`/UserData/${ownerId}/Images/${mediaId}${mediaFormat}`)
+            console.log(mediaId,mediaFormat)
+			await pipeline(stream,response,{"signal":signal})
+			
+			request.on("close",stream.destroy())
         }else{
             response.sendStatus(404)
         }
-    }catch{
+	}catch(error){
+		console.log(error)
         response.send(JSON.stringify({"status" : "server-error"}))
     }
 }) 
+
+app.post("/upload-user-image/:id", async(request,response)=>{
+	try{
+		let file = request.files.file 
+		let userId = request.params.id 
+		let socketCheck = await checkIfSocketActive(userId)
+		if(socketCheck == true){
+			let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+			let sockets = getSockets.body
+			let socket = sockets.find((sockets)=>{
+				return sockets.id === userId
+			})
+			file.mv(__dirname+`/UserData/${socket.ownerId}/Images/${socket.mediaId}${socket.mediaFormat}`)
+			response.setHeader("Content-Type","application/json")
+			response.send(JSON.stringify({"status":"success"}))
+		}else{
+			response.send(JSON.stringify({"status":"server-error"}))
+		}
+	}catch(error){
+		console.log(error)
+		response.send(JSON.stringify({"status":"server-error"}))
+	}
+});
+app.post("/upload-user-data/:id", async(request,response)=>{
+	try{
+		let file = request.files.file 
+		let userId = request.params.id 
+		let socketCheck = await checkIfSocketActive(userId)
+		if(socketCheck == true){
+			let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+			let sockets = getSockets.body
+			let socket = sockets.find((sockets)=>{
+				return sockets.id === userId
+			})
+			file.mv(__dirname+`/UserData/${socket.ownerId}/Data/${socket.mediaId}${socket.mediaFormat}`)
+			response.send(JSON.stringify({"status":"success"}))
+		}else{
+			response.send(JSON.stringify({"status":"server-error"}))
+		}
+	}catch(error){
+		console.log(error)
+		response.send(JSON.stringify({"status":"server-error"}))
+	}
+});
 
 app.get("/get-user-data/:id", async(request,response)=>{
     try{
+		const controller = new AbortController()
+		const {signal} = controller.signal
+		request.on("close",()=>{
+			stream.destroy()
+			controller.abort()
+		})
         let userId = request.params.id
         let checkSocket = await checkIfSocketActive(userId) 
         if( checkSocket == true){
@@ -2522,35 +2744,42 @@ app.get("/get-user-data/:id", async(request,response)=>{
             let mediaId = socket.mediaId
             let mediaFormat = socket.mediaFormat
             let ownerId = socket.ownerId
-            let stream = fs.createReadStream(__dirname+`/User Data/${ownerId}/Data/${mediaId}.${mediaFormat}`)
-            stream.pipe(response)
+            let stream = fs.createReadStream(__dirname+`/UserData/${ownerId}/Data/${mediaId}${mediaFormat}`)
+            response.setHeader("Content-Type","application/octet-stream")
+			await pipeline(stream,response,{"signal":signal})
         }else{
             response.sendStatus(404)
         }
-    }catch{
+    }catch(error){
+		console.log(error)
         response.send(JSON.stringify({"status" : "server-error"}))
     }
 }) 
 
-app.get("/delete-user-image/:id", async(request,response)=>{
+app.post("/delete-user-image/:id", async(request,response)=>{
     try{
+		
         let userId = request.params.id
-        if(await checkIfSocketActive(userId) == true){
+		let checkSocket = await checkIfSocketActive(userId) == true
+        if(checkSocket == true){
             let socket = await getUserSocket(userId)
             let mediaId = socket.mediaId
             let mediaFormat = socket.mediaFormat
             let ownerId = socket.ownerId
-            fs.deleteFileSync(__dirname+`/User Data/${ownerId}/Images/${mediaId}.${mediaFormat}`)
+			console.log(mediaId,mediaFormat)
+            fs.deleteFileSync(__dirname+`/UserData/${ownerId}/Images/${mediaId}${mediaFormat}`)
+			response.setHeader("Content-Type","application/json")
             response.send(JSON.stringify({"status": true}))
         }else{
             response.sendStatus(404)
         }
-    }catch{
+    }catch(error){
+		console.log(error)
         response.send(JSON.stringify({"status" : "server-error"}))
     }
 }) 
 
-app.get("/delete-user-data/:id", async(request,response)=>{
+app.post("/delete-user-data/:id", async(request,response)=>{
     try{
         let userId = request.params.id
         let checkSocket = await checkIfSocketActive(userId) 
@@ -2559,12 +2788,14 @@ app.get("/delete-user-data/:id", async(request,response)=>{
             let mediaId = socket.mediaId
             let mediaFormat = socket.mediaFormat
             let ownerId = socket.ownerId
-            fs.deleteFileSync(__dirname+`/User Data/${ownerId}/Data/${mediaId}.${mediaFormat}`)
+            fs.deleteFileSync(__dirname+`/UserData/${ownerId}/Data/${mediaId}${mediaFormat}`)
+			response.setHeader("Content-Type","application/json")
             response.send(JSON.stringify({"status": true}))
         }else{
             response.sendStatus(404)
         }
-    }catch{
+    }catch(error){
+		console.log(error)
         response.send(JSON.stringify({"status" : "server-error"}))
     }
 }) 
@@ -2585,16 +2816,15 @@ app.post("/update-user-information", async(request,response)=>{
 			})
 			users.splice(index,1,data.userData)
 			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
-			
+			response.setHeader("Content-Type","application/json")
 			response.send(JSON.stringify({"status":"success"}))
 			
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-		
-		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 	
@@ -2603,19 +2833,26 @@ app.post("/update-user-information", async(request,response)=>{
 app.post("/get-fresh-user-data", async(request,response)=>{
 	
 	try{
-		
+		response.setHeader("Content-Type","application/json")
 		let data = request.body 
-		let userId = data.userId
+		let userId = data.accessorId
+		let deviceId = data.deviceId
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
 			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			let user = users.find((users)=>{
-				users.id === userId
+				return users.id === userId
 			})
 			
-			response.send(JSON.stringify({"status":"success","accountStatus":user.accountStatus}))
+			console.log(userId)
+			
+			if(user){
+				response.send(JSON.stringify({"status":"success","accountStatus":user.accountStatus, "data": user}))
+			}else{
+				response.send(JSON.stringify({"status":"success","accountStatus":null, "data": null}))
+			}
 			
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
@@ -2623,7 +2860,8 @@ app.post("/get-fresh-user-data", async(request,response)=>{
 		
 		
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 	
@@ -2632,11 +2870,17 @@ app.post("/get-fresh-user-data", async(request,response)=>{
 	
 	
 app.get("/get-server-time",(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	response.send(JSON.stringify(serverTime))
 })
 
 /////////////////////////////////////////////////>>Paypal Functions<<///////////////////////////////////////////////////
-async function createPaypalOrder(controller,email,time) {
+async function createPaypalOrder(request,controller,email,time) {
+
+	const controllerx = new AbortController()
+	const {signal} = controllerx.signal
+	
+	request.on("close",controller.abort())
 
 	const accessToken = await generateAccessToken();
 	
@@ -2675,11 +2919,12 @@ async function createPaypalOrder(controller,email,time) {
 		],
 	
 		"intent": "CAPTURE"
-		})
+		}),
+		"signal":signal
 	
 	});
 	
-	return response.json()
+	return response.JSON.stringify()
 
 }
 
@@ -2701,23 +2946,29 @@ app.post('/create-paypal-order', async(request,response)=>{
 	
 		let userId = incoming.userId
 		
-		let createOrder = await createPaypalOrder(controller,email,time);
+		let createOrder = await createPaypalOrder(request,controller,email,time);
 		
 		console.log(createOrder)
 							
 		if(createOrder){
+			response.setHeader("Content-Type","application/json")
 			response.send(JSON.stringify(createOrder))
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 	
 })
 
-const captureOrder = async (orderID) =>{
+const captureOrder = async (request,orderID) =>{
+
+	const controller = new AbortController()
+	const {signal} = controller.signal 
+	request.on("close",controller.abort())
 
 	const accessToken = await generateAccessToken();
 	const base = "https://api-m.paypal.com";
@@ -2748,11 +2999,11 @@ const captureOrder = async (orderID) =>{
 		// "PayPal-Mock-Response": '{"mock_application_codes": "INTERNAL_SERVER_ERROR"}'
 	
 		},
-	
+		signal: signal
 	});
 	
 	
-	return await response.json();
+	return await response.JSON.stringify();
 
 };
 
@@ -2761,7 +3012,7 @@ async function handleResponse(response){
 
 	try{
 	
-		const jsonResponse = await response.json();
+		const jsonResponse = await response.JSON.stringify();
 	
 		return {
 	
@@ -2789,17 +3040,18 @@ app.post("/api/orders/capture", async(request,response)=>{
 		
 		console.log(orderID)
 		
-		const process = await captureOrder(orderID);
+		const process = await captureOrder(request,orderID);
 		
 		console.log(process)
 		
+		response.setHeader("Content-Type","application/json")
 		response.send(JSON.stringify({"status":process.status}));
 		
 	}catch (error){
 		
 		console.error("Failed to create order:", error);
 		
-		response.status(500).json(
+		response.status(500).JSON.stringify(
 		
 		{
 		
@@ -2815,13 +3067,15 @@ app.post("/api/orders/capture", async(request,response)=>{
 //Admin Processes 
 
 app.post("/login-admin", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
 		let email = data.emailAddress 
 		let password = data.password 
-		let getAdmins = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-profiles"})
-		let admins = getAdmins.body 
+		let deviceId = data.deviceId
+		let getAdmins = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
+		let admins = getAdmins.body.admins 
 		let search = admins.find((admins)=>{
 			return admins.emailAddress === email
 		})
@@ -2830,12 +3084,29 @@ app.post("/login-admin", async(request,response)=>{
 			let passwordx = search.password 
 			if(passwordx === password){
 				if(search.suspended == false){	
-					let socket = await getUserSocket(search.id)
-					socket.deviceId = data.deviceId 
-					socket.active = true 
-					socket.alreadyLoggedIn = true 
-					await updateUserSocket(socket)
-					response.send(JSON.stringify({"status":"success","data":search}))
+					let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+					let sockets = getSockets.body 
+					let socket = sockets.find((sockets)=>{
+						return sockets.id === search.id
+					})
+					console.log(sockets)
+					if(socket){
+						
+						socket.deviceId = deviceId 
+						socket.active = true 
+						socket.alreadyLoggedIn = true
+						
+						await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
+						
+						if(search.suspended == false){						
+							response.send(JSON.stringify({"status":"success","data":search}))
+						}else{
+							response.send(JSON.stringify({"status":"unavailable"}))
+						}
+						
+					}else{
+						response.send(JSON.stringify({"status":"server-error"}))
+					}
 				}else{
 					response.send(JSON.stringify({"status":"unavailable"}))
 				}
@@ -2845,12 +3116,14 @@ app.post("/login-admin", async(request,response)=>{
 			response.send(JSON.stringify({"status":"non-existent"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/add-new-admin",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -2886,12 +3159,14 @@ app.post("/add-new-admin",async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/update-admin-data", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -2917,13 +3192,15 @@ app.post("/update-admin-data", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 
 app.post("/get-fresh-admin-data", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -2948,19 +3225,24 @@ app.post("/get-fresh-admin-data", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/get-admin-data-controller",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
 		let accessorId = data.accessorId 
 		let deviceId = data.deviceId
 		let socketCheck = await checkIfSocketActive(accessorId,deviceId)
+		console.log(socketCheck)
 		if(socketCheck == true){
+			
+			console.log("here")
 			
 			let getAdminDataController = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
 			
@@ -2971,12 +3253,14 @@ app.post("/get-admin-data-controller",async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/update-admin-data-controller",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -2990,7 +3274,8 @@ app.post("/update-admin-data-controller",async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -3001,33 +3286,54 @@ async function generatePerformanceChartData(type,adminDataController,selectedDat
 	
 	try{		
 		
-		let getSubs = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"subscribed-users"})
-		let input = getSubs.body 
-		let subs = await filterSubsForDate(input,selectedDate)
+		let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+		let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
+		let subs = getData.subscriptions
+		let users = getUsers.body
 		
-		let distribution = {}
 		
-		for(var i=0; i<subs.length; i++){
-			let sub = subs[i]
-			let date = sub.dateCreated
-			let names = distribution.keys 
-			let input;
-			if(date.date < 10){
-				input = `0${date.date}`
-			}else{
-				input = `${date.date}`
+		let monthsArray = [
+			"January", "February", "March", "April", "May", "June",
+			"July", "August", "September", "October", "November", "December"
+		]
+		
+		let distribution =  {
+			"January": 0, "February": 0, "March": 0, "April": 0,
+			"May": 0, "June": 0, "July": 0, "August": 0,
+			"September": 0, "October": 0, "November": 0, "December": 0
+		};
+		if(type === "Subscriptions"){
+			
+			for(var i=0; i<subs.length; i++){
+				let sub = subs[i]
+				let date = sub.dateStarted
+				if(date.year == selectedDate.year){
+					let old = distribution[monthsArray[date.month]]
+					distribution[monthsArray[date.month]] = old+1
+				}
 			}
-			if(names.includes(input) == false){
-				distribution[input] = sub.value
-			}else{
-				let old = distribution[input]
-				distribution[input] = old+sub.value
+			
+			output = distribution
+			
+		}else{
+			
+			for(var i=0; i<users.length; i++){
+				let user = users[i]
+				let logs = user.behaviourLogs
+				for(var x=0; x<logs.length; x++){
+					let log = logs[x]
+					let date = log.date
+					if(date.year == selectedDate.year){
+						let old = distribution[monthsArray[date.month]]
+						distribution[monthsArray[date.month]] = old+1
+					}
+				}
 			}
+			
+			output = distribution
 		}
-		
-		output = distribution
-		
-	}catch{
+	}catch(error){
+		console.log(error)
 		output = null
 	}
 	return output
@@ -3036,7 +3342,7 @@ async function generatePerformanceChartData(type,adminDataController,selectedDat
 
 app.post("/get-performance-chart-data", async(request,response)=>{
 	try{
-		
+		response.setHeader("Content-Type","application/json")
 		let data = request.body 
 		let adminId = data.adminId 
 		let deviceId = data.deviceId
@@ -3051,6 +3357,7 @@ app.post("/get-performance-chart-data", async(request,response)=>{
 			let process = await generatePerformanceChartData(type,adminDataController,data.selectedDate)
 			
 			if(process){
+			
 				response.send(JSON.stringify({"status":"success","data":process}))
 			}else{
 				response.send(JSON.stringify({"status":"server-error"}))
@@ -3060,7 +3367,8 @@ app.post("/get-performance-chart-data", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -3099,6 +3407,8 @@ async function filterSubsForDate(subs,selectedDate){
 app.post("/get-all-subscription-transactions", async(request,response)=>{
 	try{
 		
+		response.setHeader("Content-Type","application/json")
+		
 		let data = request.body 
 		let adminId = data.adminId 
 		let deviceId = data.deviceId
@@ -3116,7 +3426,8 @@ app.post("/get-all-subscription-transactions", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -3144,7 +3455,7 @@ async function getOnlineUsers(sockets){
 
 app.post("/get-currently-online-users", async(request,response)=>{
 	try{
-		
+		response.setHeader("Content-Type","application/json")
 		let data = request.body 
 		
 		let adminId = data.adminId 
@@ -3162,14 +3473,15 @@ app.post("/get-currently-online-users", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/get-total-users", async(request,response)=>{
 	try{
-		
+		response.setHeader("Content-Type","application/json")
 		let data = request.body 
 		let accessorId = data.accessorId 
 		let deviceId = data.deviceId 
@@ -3184,7 +3496,8 @@ app.post("/get-total-users", async(request,response)=>{
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -3267,7 +3580,7 @@ async function getSubbedUsers(users){
 
 app.post("/get-subscribed-users", async(request,response)=>{
 	try{
-		
+		response.setHeader("Content-Type","application/json")
 		let data = request.body 
 		let accessorId = data.accessorId 
 		let deviceId = data.deviceId
@@ -3286,7 +3599,8 @@ app.post("/get-subscribed-users", async(request,response)=>{
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
@@ -3351,12 +3665,12 @@ app.post("/synchronise-project-data", async(request,response)=>{
 			
 			var proceed = true
 			
-			file.mv(__dirname+`/User Data/${ownerId}/Data/${fileName}`,(error)=>{
+			file.mv(__dirname+`/UserData/${ownerId}/Data/${fileName}`,(error)=>{
 				if(error){
 					proceed = true
 				}
 			})
-			
+			response.setHeader("Content-Type","application/json")
 			if(proceed == true){
 				
 				response.send(JSON.stringify({"status":"success"}))
@@ -3371,12 +3685,14 @@ app.post("/synchronise-project-data", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/delete-queue-data",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		let accessorId = data.accessorId 
 		let deviceId = data.deviceId
@@ -3385,20 +3701,27 @@ app.post("/delete-queue-data",async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(accessorId,deviceId)
 		if(socketCheck == true){
 			
-			fs.deleteFileSync(__dirname+`/User Data/${projectOwner}/Data/${fileName}.zip`)
+			fs.deleteFileSync(__dirname+`/UserData/${projectOwner}/Data/${fileName}.zip`)
 			response.send(JSON.stringify({"status":"success"}))
 			
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 	}
-	catch{
+	catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.get("/get-queue-object-files/:id", async(request,response)=>{
+	response.setHeader("Content-Type","application/octet-stream")
+	let stream;
 	try{
+		
+		const controller = new AbortController()
+		const {signal} = controller.signal 
+		request.on("close",controller.abort())
 		
 		let accessorId = request.params.id 
 		
@@ -3418,15 +3741,18 @@ app.get("/get-queue-object-files/:id", async(request,response)=>{
 			let format = socket.format
 			let ownerId = socket.ownerId 
 			
-			let stream = fs.createReadStream(__dirname+`/User Data/${ownerId}/Data/${name}.${format}`)
+			stream = fs.createReadStream(__dirname+`/UserData/${ownerId}/Data/${name}.${format}`)
 			
-			stream.pipe(response)
+			request.on("close",stream.destroy())
+			
+			await pipeline(stream,response,{"signal":signal})
 			
 		}else{
 			response.sendStatus(404)
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.sendStatus(404)
 	}
 })
@@ -3437,25 +3763,39 @@ app.get('/download-app',(req,res)=>{
 		const apkPath = path.join(__dirname,'Software','CriterianDeveloper.apk');
 		if(!fs.existsSync(apkPath)){
 			console.log("failed")
-			return res.status(404).json({message:'APK not found'});
+			return res.status(404).JSON.stringify({message:'APK not found'});
 		}
 		res.setHeader('Content-Type','application/vnd.android.package-archive');
 		res.setHeader('Content-Disposition','attachment; filename="CriterianDeveloper.apk"');
 		fs.createReadStream(apkPath).pipe(res);
 	}catch(err){
 		console.error(err);
-		res.status(500).json({message:'download failed'});
+		res.status(500).JSON.stringify({message:'download failed'});
 	}
 });
 
+function shuffle(array) {
+  // Create a copy to keep the original array clean
+  const shuffled = [...array]; 
+  
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    // Pick a random index from 0 to i
+    const j = Math.floor(Math.random() * (i + 1));
+    
+    // Swap elements using ES6 destructuring
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  
+  return shuffled;
+}
 
 async function generateEmailCode(user){
 	let output = "CS-";
 	
 	let array = [0,1,2,3,4,5,6,7,8,9]
 	for(var i=0; i<4; i++){
-		array.shuffle()
-		output = `${output}${array[0]}`
+		let x = shuffle(array)
+		output = `${output}${x[0]}`
 	}
 	
 	let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
@@ -3529,6 +3869,7 @@ async function SendEmail(user,code){
 }
 
 app.post("/generate-verification-code", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body 
@@ -3569,12 +3910,14 @@ app.post("/generate-verification-code", async(request,response)=>{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/check-verification-code", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body
@@ -3597,20 +3940,22 @@ app.post("/check-verification-code", async(request,response)=>{
 				user.verificationCode = null
 				user.verified = true
 				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
-				response.send(json({"status":"success"}))
+				response.send(JSON.stringify({"status":"success"}))
 			}else{
-				response.send(json({"status":"invalid-code"}))
+				response.send(JSON.stringify({"status":"invalid-code"}))
 			}
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
+	}catch(error){
+		console.log(error)
 		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/transfer-purchase-data", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body
@@ -3623,22 +3968,32 @@ app.post("/transfer-purchase-data", async(request,response)=>{
 			let x = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"purchase-transfer-requests"})
 			let requests = x.body 
 			
-			requests.push(data.request)
+			//check if the request id already exists to prevent duplication 
+			let search = requests.find((requests)=>{
+				return requests.id === data.request.id
+			})
 			
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"purchase-transfer-requests"},{$set:{"body":requests}})
-			
-			response.send(json({"status":"success"}))
+			if(!search){				
+				requests.push(data.request)
+				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"purchase-transfer-requests"},{$set:{"body":requests}})				
+				response.send(JSON.stringify({"status":"success"}))
+				
+			}else{
+				response.send(JSON.stringify({"status":"already-exists"}))
+			}
 			
 		}else{
-			response.send(json({"status":"server-error"}))
+			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
-		response.send(json({"status":"server-error"}))
+	}catch(error){
+		console.log(error)
+		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/get-purchase-data", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		let data = request.body
 		let accessorId = data.accessorId
@@ -3654,19 +4009,21 @@ app.post("/get-purchase-data", async(request,response)=>{
 				requests.jobId === jobId
 			})
 			if(requestx){
-				response.send(json({"status":"success","data":requestx}))
+				response.send(JSON.stringify({"status":"success","data":requestx}))
 			}else{
-				response.send(json({"status":"server-error"}))
+				response.send(JSON.stringify({"status":"server-error"}))
 			}
 		}else{
-			response.send(json({"status":"server-error"}))
+			response.send(JSON.stringify({"status":"server-error"}))
 		}
-	}catch{
-		response.send(json({"status":"server-error"}))
+	}catch(error){
+		console.log(error)
+		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 app.post("/check-feature-availability",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		let data = request.body
 		let accessorId = data.accessorId
@@ -3684,22 +4041,24 @@ app.post("/check-feature-availability",async(request,response)=>{
 			if(data.type === "Check Out Systems"){
 				output = features.checkOut
 			}
-			response.send(json({status:"success",data:output}))
+			response.send(JSON.stringify({status:"success",data:output}))
 		}else{
-			response.send(json({"status":"server-error"}))
+			response.send(JSON.stringify({"status":"server-error"}))
 		}
-	}catch{
-		response.send(json({"status":"server-error"}))
+	}catch(error){
+		console.log(error)
+		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
-app.get("/get-app-current-version", async(request,response)=>{
+app.post("/get-app-current-version", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"features-available"})
 		let features = getData.body
-		response.send(json({"status":"success","version":features.version}))
+		response.send(JSON.stringify({"status":"success","version":features.version}))
 	}catch{
-		response.send(json({"status":"server-error"}))
+		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
@@ -3729,6 +4088,7 @@ async function processAIRequest(request) {
 
 
 app.post("/post-ai-assist-request", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
 	try{
 		
 		let data = request.body
@@ -3742,27 +4102,209 @@ app.post("/post-ai-assist-request", async(request,response)=>{
 			let process = await processAIRequest(request)
 			
 			if(process){				
-				response.send(json({"status":"success","data":process}))
+				response.send(JSON.stringify({"status":"success","data":process}))
 			}else{
-				response.send(json({"status":"server-error"}))
+				response.send(JSON.stringify({"status":"server-error"}))
 			}
 			
 		}else{
-			response.send(json({"status":"server-error"}))
+			response.send(JSON.stringify({"status":"server-error"}))
 		}
 		
-	}catch{
-		response.send(json({"status":"server-error"}))
+	}catch(error){
+		console.log(error)
+		response.send(JSON.stringify({"status":"server-error"}))
 	}
 })
 
 async function maintenanceProcess(){
-	let getData = await fetch("https://youthempowermentapp.onrender.com/check-maintenance")
-	let data = await getData.json()
-	let status = data.status
-	console.log("Maintenance Status -->"+status)	
+	if(checkConnection("https://criteriandeveloper.onrender.com/check-maintenance") == true){		
+		let getData = await fetch("https://criteriandeveloper.onrender.com/check-maintenance")
+		let data = await getData.JSON.stringify()
+		let status = data.status
+		console.log("Maintenance Status -->"+status)	
+	}else{
+		console.log("No intenet connection")
+	}
 }
+
+app.get("/check-maintenance", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
+	response.send(JSON.stringify({"status":"success"}))
+})
+
+app.get("/check-ads-availability",async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
+	try{
+		let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"ads-available"})
+		response.send(JSON.stringify({status:getData.status}))
+	}catch(error){
+		console.log(error)
+		response.send(JSON.stringify({status:false}))
+	}
+})
+
+//User ranking function 
+
+async function RankAllUsers(users,rankingMode){
 	
-//setInterval(async()=>{ await maintenanceProcess()},1000*30)
+	let output = []
+	
+	try{
+		
+		//get forum data 
+		let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+		let problems = getForumData.body 
+		
+		//let get solved problems
+		let winningResponses = []
+		
+		for(var i=0; i<problems.length; i++){
+			
+			let problem = problems[i]
+			
+			if(problem.resolved == true){
+				let corresponders = problem.corresponders
+				let winningResponse = corresponders.find((corresponders)=>{
+					return corresponders.winner == true
+				})
+				if(winningResponse){
+					winningResponses.push(winningResponse)
+				}
+			}
+			
+		}
+		
+		//map of users to problems solved 
+		
+		let map = []
+		
+		for(var i=0; i<winningResponses.length; i++){
+			
+			let x = winningResponses[i]
+			
+			let resolver = x.userId 
+			
+			let check = map.find((map)=>{
+				return map.userId === resolver
+			})
+			
+			if(!check){
+				map.push({
+					"userId": resolver,
+					"hits":1
+				})
+			}else{
+				let old = check.hits
+				check.hits = old+1
+			}
+			
+		}
+		
+		//set user rank and load user accounts into output 
+		for(var i=0; i<map.length; i++){
+			let x = map[i]
+			let user = users.find((users)=>{
+				return users.id === x.userId
+			})
+			if(user){
+				let rank = i+1
+				user.rank = rank
+				user.dateModified = serverTime
+				output.push(user)
+			}
+		}
+		
+		//update users
+		await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+		
+		if(rankingMode == 0){			
+			//rank users in output (highest to lowest) 
+			output.sort((a,b)=>{
+				a.rank - b.rank
+			})
+		}else{
+			//rank users in output (lowest to highest) 
+			output.sort((a,b)=>{
+				b.rank - a.rank
+			})
+		}
+		
+	}catch(error){
+		console.log(error)
+		console.log("error ranking users")
+	}
+	
+	return output
+}
+
+app.post("/get-users-ranked", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
+	try{
+		
+		let data = request.body 
+		let deviceId = data.deviceId
+		let userId = data.userId
+		let rankingMode = data.rankingMode
+		
+		let socketCheck = await checkIfSocketActive(userId,deviceId)
+		
+		if(socketCheck == true){
+			
+			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let users = getUsers.body 
+			
+			let process = await RankAllUsers(users,rankingMode)
+			
+			response.send(JSON.stringify({"status":"success", "data": process}))
+			
+		}else{
+			response.send(JSON.stringify({"status":"server-error"}))
+		}
+		
+	}catch(error){
+		console.log(error)
+		response.send(JSON.stringify({"status":"server-error"}))
+	}
+})
+
+app.post("/search-users-by-email", async(request,response)=>{
+	response.setHeader("Content-Type","application/json")
+	try{
+		let data = request.body 
+		let userId = data.userId 
+		let deviceId = data.deviceId 
+		let searchInput = data.searchInput
+		
+		let socketCheck = await checkIfSocketActive(userId,deviceId)
+		
+		if(socketCheck == true){
+			
+			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let users = getUsers.body 
+			
+			let process = users.find((users)=>{
+				return users.id === searchInput
+			})
+			
+			if(process){
+				
+				response.send(JSON.stringify({"status":"success", "data": process}))
+				
+			}else{
+				response.send(JSON.stringify({"status":"user-not-found"}))
+			}
+			
+		}else{
+			response.send(JSON.stringify({"status":"server-error"}))
+		}
+	}
+	catch(error){
+		console.log(error)
+		response.send(JSON.stringify({"status":"server-error"}))
+	}
+})
+	
+setInterval(async()=>{ await maintenanceProcess()},1000*30)
 
 server.listen(port)
