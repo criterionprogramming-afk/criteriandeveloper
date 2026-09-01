@@ -18,9 +18,9 @@ import {spawn} from "child_process";
 import dns from 'dns'
 import { MongoClient } from 'mongodb'
 import nodemailer from 'nodemailer'
-const { pipeline } = import('readable-stream/promises')
+const { pipeline } 
 
-import { Octokit } from "octokit";
+import { Octokit } = import('octokit');
 
  // Enable command monitoring for debugging
 const mongoClient = new MongoClient('mongodb+srv://shopmatesales:N6Npa7vcMIaBULIS@cluster0.mgv7t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', { monitorCommands: true });
