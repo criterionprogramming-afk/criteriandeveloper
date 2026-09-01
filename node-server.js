@@ -22,7 +22,7 @@ const { pipeline } = import("readable-stream/promises")
 import crypto from 'node:crypto';
 
 const subtle = crypto.webcrypto.subtle; 
-import { Octokit } = import('octokit');
+const { Octokit } = import('octokit');
 
  // Enable command monitoring for debugging
 const mongoClient = new MongoClient('mongodb+srv://shopmatesales:N6Npa7vcMIaBULIS@cluster0.mgv7t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', { monitorCommands: true });
