@@ -19,7 +19,7 @@ import dns from 'dns'
 import { MongoClient } from 'mongodb'
 import nodemailer from 'nodemailer'
 const { pipeline } = import("readable-stream/promises")
-const {crypto} = import('node:crypto');
+const crypto = import('node:crypto');
 
 const subtle = crypto.webcrypto.subtle; 
 const { Octokit } = import('octokit');
