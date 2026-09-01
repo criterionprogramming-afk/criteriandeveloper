@@ -19,7 +19,6 @@ import dns from 'dns'
 import { MongoClient } from 'mongodb'
 import nodemailer from 'nodemailer'
 const { pipeline } = import("readable-stream/promises")
-import { Octokit } from "octokit";
 
  // Enable command monitoring for debugging
 const mongoClient = new MongoClient('mongodb+srv://shopmatesales:N6Npa7vcMIaBULIS@cluster0.mgv7t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', { monitorCommands: true });
@@ -594,75 +593,7 @@ io.on("connection", (socket)=>{
 	
 })
 
-const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
-async function checkServerMode(){
-	let output = false 
-	
-	try{
-		
-		let modeData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"file-exchange-mode"})
-		output = modeData.mode
-		//false for github
-		
-	}catch(error){
-		console.log(error)
-	}
-	
-	return output
-}
-
-async function githubDataTransfer(type,inputStream,name,pathInput,request,response){
-	let output = false
-	const controller = new AbortController()
-	const {signal} = controller.signal
-	  try {
-	
-			const contentBase64 = inputStream.data.toString('base64');
-	
-			let resolveType = ()=>{
-				let output = null
-				if(type === "image"){
-					output = "Images"
-				}
-				if(type === "audio"){
-					output = "Audio"
-				}
-				if(type === "other"){
-					output = "Data"
-				}
-				if(type === "video"){
-					output = "Videos"
-				}
-				return output
-			}
-	
-			let result = await octokit.rest.repos.createOrUpdateFileContents({
-				owner: 'criterionprogramming-afk',
-				repo: 'criteriandeveloper',
-				path: pathInput,
-				message: `Add ${name} via Express backend`,
-				content: contentBase64,
-				branch: 'main',
-				signal: signal
-			});
-			
-			request.on("close",()=>{
-				controller.abort()
-				inputStream.destroy()
-				outputStream.destroy()
-			})  
-			
-			response.send(JSON.stringify({"status":"success"}))
-			
-	  } catch (error) {
-			console.error(error)
-			response.send(JSON.stringify({"status":"server-error"}))
-	  }
-	
-	
-	return output
-}
 //Page server responses
 
 function SubDateEvaluator(sub){
@@ -2768,14 +2699,9 @@ app.post("/upload-user-image/:id", async(request,response)=>{
 				return sockets.id === userId
 			})
 			let checkServer = await checkServerMode()
-			if(checkServer == true){				
-				file.mv(__dirname+`/UserData/${socket.ownerId}/Images/${socket.mediaId}${socket.mediaFormat}`)
-				response.setHeader("Content-Type","application/json")
-				response.send(JSON.stringify({"status":"success"}))
-			}else{
-				const readStream = fs.createReadStream(file.data)
-				await githubDataTransfer("image",readStream,`${mediaId}${mediaForma}`,`UserData/${socket.ownerId}/Images/`,request,response)
-			}
+			file.mv(__dirname+`/UserData/${socket.ownerId}/Images/${socket.mediaId}${socket.mediaFormat}`)
+			response.setHeader("Content-Type","application/json")
+			response.send(JSON.stringify({"status":"success"}))
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
@@ -2796,13 +2722,8 @@ app.post("/upload-user-data/:id", async(request,response)=>{
 			let socket = sockets.find((sockets)=>{
 				return sockets.id === userId
 			})
-			if(checkServer == true){				
-				file.mv(__dirname+`/UserData/${socket.ownerId}/Data/${socket.mediaId}${socket.mediaFormat}`)
-				response.send(JSON.stringify({"status":"success"}))
-			}else{
-				const readStream = fs.createReadStream(file.data)
-				await githubDataTransfer("other",readStream,`${mediaId}${mediaForma}`,`UserData/${socket.ownerId}/Data/`,request,response)
-			}
+			file.mv(__dirname+`/UserData/${socket.ownerId}/Data/${socket.mediaId}${socket.mediaFormat}`)
+			response.send(JSON.stringify({"status":"success"}))
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
