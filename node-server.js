@@ -18,7 +18,7 @@ import {spawn} from "child_process";
 import dns from 'dns'
 import { MongoClient } from 'mongodb'
 import nodemailer from 'nodemailer'
-const { pipeline } 
+const { pipeline } = import("readable-stream/promises")
 import crypto from 'node:crypto';
 
 const subtle = crypto.webcrypto.subtle; 
