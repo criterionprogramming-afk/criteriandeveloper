@@ -2759,9 +2759,6 @@ app.post("/upload-user-image/:id", async(request,response)=>{
 		let file = request.files.file 
 		let userId = request.params.id 
 		let socketCheck = await checkIfSocketActive(userId)
-						response.send(JSON.stringify({"status":"success"}))
-			}else{
-				await githubDataTransfer("other",inputStream,`${mediaId}${mediaForma}`,`UserData/${socket.ownerId}/Data/`,request,response)
 		if(socketCheck == true){
 			let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
 			let sockets = getSockets.body
