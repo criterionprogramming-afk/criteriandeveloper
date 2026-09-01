@@ -20,12 +20,12 @@ import { MongoClient } from 'mongodb'
 import nodemailer from 'nodemailer'
 import { pipeline } from 'node:stream/promises'
  // Enable command monitoring for debugging
-/* 
 const mongoClient = new MongoClient('mongodb+srv://shopmatesales:N6Npa7vcMIaBULIS@cluster0.mgv7t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', { monitorCommands: true });
 mongoClient.connect()// Enable command monitoring for debugging
-*/
+/* 
 const mongoClient = new MongoClient(uri, { monitorCommands: true });
 mongoClient.connect()// Enable command monitoring for debugging
+*/
 //server calls management
 
 import express from 'express'
@@ -592,6 +592,75 @@ io.on("connection", (socket)=>{
 	
 })
 
+const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+async function checkServerMode(){
+	let output = false 
+	
+	try{
+		
+		let modeData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"file-exchange-mode"})
+		output = modeData.mode
+		//false for github
+		
+	}catch(error){
+		console.log(error)
+	}
+	
+	return output
+}
+
+async function githubDataTransfer(type,inputStream,name,pathInput,request,response){
+	let output = false
+	const controller = new AbortController()
+	const {signal} = controller.signal
+	  try {
+	
+			const contentBase64 = inputStream.data.toString('base64');
+	
+			let resolveType = ()=>{
+				let output = null
+				if(type === "image"){
+					output = "Images"
+				}
+				if(type === "audio"){
+					output = "Audio"
+				}
+				if(type === "other"){
+					output = "Data"
+				}
+				if(type === "video"){
+					output = "Videos"
+				}
+				return output
+			}
+	
+			let result = await octokit.rest.repos.createOrUpdateFileContents({
+				owner: 'criterionprogramming-afk',
+				repo: 'YEMP',
+				path: pathInput,
+				message: `Add ${name} via Express backend`,
+				content: contentBase64,
+				branch: 'main',
+				signal: signal
+			});
+			
+			request.on("close",()=>{
+				controller.abort()
+				inputStream.destroy()
+				outputStream.destroy()
+			})  
+			
+			response.send(JSON.stringify({"status":"success"}))
+			
+	  } catch (error) {
+			console.error(error)
+			response.send(JSON.stringify({"status":"server-error"}))
+	  }
+	
+	
+	return output
+}
 //Page server responses
 
 function SubDateEvaluator(sub){
@@ -2690,15 +2759,24 @@ app.post("/upload-user-image/:id", async(request,response)=>{
 		let file = request.files.file 
 		let userId = request.params.id 
 		let socketCheck = await checkIfSocketActive(userId)
+						response.send(JSON.stringify({"status":"success"}))
+			}else{
+				await githubDataTransfer("other",inputStream,`${mediaId}${mediaForma}`,`UserData/${socket.ownerId}/Data/`,request,response)
 		if(socketCheck == true){
 			let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
 			let sockets = getSockets.body
 			let socket = sockets.find((sockets)=>{
 				return sockets.id === userId
 			})
-			file.mv(__dirname+`/UserData/${socket.ownerId}/Images/${socket.mediaId}${socket.mediaFormat}`)
-			response.setHeader("Content-Type","application/json")
-			response.send(JSON.stringify({"status":"success"}))
+			let checkServer = await checkServerMode()
+			if(checkServer == true){				
+				file.mv(__dirname+`/UserData/${socket.ownerId}/Images/${socket.mediaId}${socket.mediaFormat}`)
+				response.setHeader("Content-Type","application/json")
+				response.send(JSON.stringify({"status":"success"}))
+			}else{
+				const readStream = fs.createReadStream(file.data)
+				await githubDataTransfer("image",readStream,`${mediaId}${mediaForma}`,`UserData/${socket.ownerId}/Images/`,request,response)
+			}
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
@@ -2712,14 +2790,20 @@ app.post("/upload-user-data/:id", async(request,response)=>{
 		let file = request.files.file 
 		let userId = request.params.id 
 		let socketCheck = await checkIfSocketActive(userId)
+		let checkServer = await checkServerMode()
 		if(socketCheck == true){
 			let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
 			let sockets = getSockets.body
 			let socket = sockets.find((sockets)=>{
 				return sockets.id === userId
 			})
-			file.mv(__dirname+`/UserData/${socket.ownerId}/Data/${socket.mediaId}${socket.mediaFormat}`)
-			response.send(JSON.stringify({"status":"success"}))
+			if(checkServer == true){				
+				file.mv(__dirname+`/UserData/${socket.ownerId}/Data/${socket.mediaId}${socket.mediaFormat}`)
+				response.send(JSON.stringify({"status":"success"}))
+			}else{
+				const readStream = fs.createReadStream(file.data)
+				await githubDataTransfer("other",readStream,`${mediaId}${mediaForma}`,`UserData/${socket.ownerId}/Data/`,request,response)
+			}
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
 		}
