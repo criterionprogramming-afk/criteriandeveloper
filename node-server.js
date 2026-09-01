@@ -333,7 +333,7 @@ async function getActiveUsers(){
     let output = null 
     
     try{
-        let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+        let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
 		output = getSockets.body 
     }catch(error){
 		console.log(error)
@@ -344,7 +344,7 @@ async function getActiveUsers(){
 
 async function updateActiveSockets(sockets){
     try{
-        await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body" : sockets}})
+        await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body" : sockets}})
     }catch(error){
 		console.log(error)
         console.log("An error occurred while processing user sockets")
@@ -401,7 +401,7 @@ const getUserSocket = async(userId)=>{
 const getUserSocketObject = async(userId)=>{
     var output = null 
     try{			
-		let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+		let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
 		let sockets = getSockets.body
 		
 		let search = sockets.find((sockets)=>{
@@ -419,7 +419,7 @@ const getUserSocketObject = async(userId)=>{
 }
 const updateUserSocket = async(socket)=>{
 	try{		
-		let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+		let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
 		let sockets = getSockets.body
 		
 		let index = sockets.findIndex((sockets)=>{
@@ -427,7 +427,7 @@ const updateUserSocket = async(socket)=>{
 		})
 		sockets.splice(index,1,socket)
 		
-		await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
+		await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
 	}catch(error){
 		console.log(error)
 	}
@@ -453,7 +453,7 @@ const loginSocketFunction = async(userId)=>{
 const checkIfSocketActive = async(userId,deviceId)=>{
     let output = false
 	
-	let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+	let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
     let activeSockets = getSockets.body
     let search = activeSockets.find((activeSockets)=>{
         return activeSockets.id === userId
@@ -488,7 +488,7 @@ io.on("connection", (socket)=>{
 		let socketCheck = await checkIfSocketActive(accessorId,deviceId)
 		if(socketCheck == true){
 			
-			let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+			let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
 			let sockets = getSockets.body 
 			
 			let socket = sockets.find((sockets)=>{
@@ -499,7 +499,7 @@ io.on("connection", (socket)=>{
 			socket.mediaFormat = data.format 
 			socket.mediaId = data.id
 			
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
 			
 		}
 		
@@ -513,7 +513,7 @@ io.on("connection", (socket)=>{
 			let problemId = data.problemId 
 			let socketCheck = await checkIfSocketActive(userId,deviceId)
 			if(socketCheck == true){
-				let getProblems = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+				let getProblems = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 				let problems = getProblems.body 
 				let problem = problems.find((problems)=>{
 					return problems.id === problemId
@@ -521,7 +521,7 @@ io.on("connection", (socket)=>{
 				if(problem){
 					
 					problem.opens = problem.opens+1 
-					await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
+					await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
 					
 					
 				}else{
@@ -541,7 +541,7 @@ io.on("connection", (socket)=>{
 			let deviceId = data.deviceId
 			let socketCheck = await checkIfSocketActive(userId,deviceId)
 			if(socketCheck == true){
-				let getjobs = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"job-lisitngs"})
+				let getjobs = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"job-lisitngs"})
 				let jobs = getJobs.body 
 				let job = jobs.find((jobs)=>{
 					return jobs.id === jobId
@@ -549,7 +549,7 @@ io.on("connection", (socket)=>{
 				if(job){
 					
 					job.opens = job.opens+1 
-					await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"job-listings"},{$set:{"body":problems}})
+					await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"job-listings"},{$set:{"body":problems}})
 					
 					
 				}else{
@@ -599,7 +599,7 @@ async function checkServerMode(){
 	
 	try{
 		
-		let modeData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"file-exchange-mode"})
+		let modeData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"file-exchange-mode"})
 		output = modeData.mode
 		//false for github
 		
@@ -637,7 +637,7 @@ async function githubDataTransfer(type,inputStream,name,pathInput,request,respon
 	
 			let result = await octokit.rest.repos.createOrUpdateFileContents({
 				owner: 'criterionprogramming-afk',
-				repo: 'YEMP',
+				repo: 'criteriandeveloper',
 				path: pathInput,
 				message: `Add ${name} via Express backend`,
 				content: contentBase64,
@@ -692,7 +692,7 @@ async function updateAdminDataController(){
 	try{
 		await timeProcessor()
 		
-		let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
+		let getData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-data-controller"})
 		let adminData = getData.body 
 		let year = adminData.year 
 		
@@ -725,7 +725,7 @@ async function updateAdminDataController(){
 			adminData.userLogons = []
 			adminData.historicalData.push(oldData)
 			
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"admin-data-controller"},{$set:{"body":adminData}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"admin-data-controller"},{$set:{"body":adminData}})
 		}
 		
 	}catch(error){
@@ -761,7 +761,7 @@ async function getRates(){
 		
 		let response = await get.JSON.stringify()
 		
-		await mongoClient.db("CriterionDev").collection("Main").updateOne({"name":"exchange-rates"},{$set:{"body":response}})
+		await mongoClient.db("CriterianDev").collection("Main").updateOne({"name":"exchange-rates"},{$set:{"body":response}})
 		
 		output = response
 		
@@ -769,7 +769,7 @@ async function getRates(){
 		
 	}else{
 		
-		let get = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"exchange-rates"})
+		let get = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"exchange-rates"})
 		
 		let response = get.body
 		
@@ -842,7 +842,7 @@ let processMap = async(array,map)=>{
 app.get("/get-leap-year",async(request,response)=>{
 	response.setHeader("Content-Type","application/json")
 	try{
-		let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"leap-year-status"})
+		let getData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"leap-year-status"})
 		response.send(JSON.stringify({"status":getData.status}))
 	}catch(error){
 		console.log(error)
@@ -976,7 +976,7 @@ app.post("/login-user", async(request,response)=>{
 		let emailAddress = data.emailAddress 
 		let password = data.password 
 		let deviceId = data.deviceId
-		let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+		let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 		let users = getUsers.body 
 		let search = users.find((users)=>{
 			return users.emailAddress === emailAddress
@@ -986,7 +986,7 @@ app.post("/login-user", async(request,response)=>{
 		
 		if(search){
 			if(search.password === password){
-				let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+				let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
 				let sockets = getSockets.body 
 				let socket = sockets.find((sockets)=>{
 					return sockets.id === search.id
@@ -997,7 +997,7 @@ app.post("/login-user", async(request,response)=>{
 					socket.active = true 
 					socket.alreadyLoggedIn = true
 					console.log(socket)
-					await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
+					await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
 					if(search.accountStatus =="Active"){						
 						response.send(JSON.stringify({"status":"success","data":search}))
 					}else{
@@ -1025,7 +1025,7 @@ app.post("/login-user", async(request,response)=>{
 async function checkEmails(email){
 	let output = null
 	try{
-		let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+		let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 		let users = getUsers.body 
 		let search = users.find((users)=>{
 			return users.emailAddress === email
@@ -1051,13 +1051,13 @@ app.post("/add-new-user", async(request,response)=>{
 		let emailCheck = await checkEmails(newUser.emailAddress)
 		if(emailCheck == false){
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			users.push(newUser)
 			
 			await addUserSocket(newUser.id,"user", data.deviceId)
 			
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 			await  createUserDirectories(newUser)
 			response.send(JSON.stringify({"status":"success","data":newUser}))
 			
@@ -1077,7 +1077,7 @@ app.post("/find-secret-question",async(request,response)=>{
 		
 		let data = request.body 
 		let emailAddress = data.emailAddress 
-		let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+		let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 		let users = getUsers.body 
 		let user = users.find((users)=>{
 			return users.emailAddress === emailAddress
@@ -1103,7 +1103,7 @@ app.post("/change-secret-question", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			let user = users.find((users)=>{
 				users.id === userId
@@ -1112,7 +1112,7 @@ app.post("/change-secret-question", async(request,response)=>{
 				
 				user.secretQuestion = data.secretQuestion
 				user.secretQuestionAnswer = data.secretQuestionAnswer
-				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+				await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 				response.send(JSON.stringify({"status":"success"}))
 				
 			}else{
@@ -1136,7 +1136,7 @@ app.post("/get-user-by-email-address",async(request,response)=>{
 	try{
 		
 		let data = request.body 
-		let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+		let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 		let users = getUsers.body 
 		let user = users.find((users)=>{
 			return users.emailAddress === data.emailAddress
@@ -1162,7 +1162,7 @@ app.post("/change-email-address", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			let user = users.find((users)=>{
 				return users.id === userId
@@ -1170,7 +1170,7 @@ app.post("/change-email-address", async(request,response)=>{
 			if(user){
 				
 				user.emailAddress = data.emailAddress 
-				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+				await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 				response.send(JSON.stringify({"status":"success"}))
 				
 			}else{
@@ -1197,7 +1197,7 @@ app.post("/change-password", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			let user = users.find((users)=>{
 				return users.id === userId
@@ -1206,7 +1206,7 @@ app.post("/change-password", async(request,response)=>{
 			if(user){
 				
 				user.password = data.password 
-				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+				await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 				response.send(JSON.stringify({"status":"success"}))
 				
 			}else{
@@ -1291,7 +1291,7 @@ app.post("/get-categories-all", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getJobs = await mongoClient.db("CriterionDev").findOne({"name":"job-listings"})
+			let getJobs = await mongoClient.db("CriterianDev").findOne({"name":"job-listings"})
 			let jobs = getJobs.body 
 			let output = await MtpCategorySorter(jobs,false,true)
 			response.send(JSON.stringify({"status":"success","data":output}))
@@ -1345,7 +1345,7 @@ app.post("/get-all-problem-categories", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getProblems = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"problem-listings"})
+			let getProblems = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"problem-listings"})
 			let problems = getProblems.body 
 			let output = await SortProblemCategories(problems)
 			response.send(JSON.stringify({"status":"success","data":output}))
@@ -1696,7 +1696,7 @@ app.post("/get-jobs-by-category", async(request,response)=>{
 		let deviceId = data.deviceId
 		let socketCheck = await checkIfSocketActive(userId,deviceId)
 		if(socketCheck == true){
-			let getJobs = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"job-listings"})
+			let getJobs = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"job-listings"})
 			let jobs = getJobs.body
 			let processForLocation = await ProcessJobsByLocation(jobs,location)
 			let output = await FilterJobsByCategory(jobs,selectedCategory,data.oldestNewest)
@@ -1761,7 +1761,7 @@ app.post("/get-problems-by-category", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId,deviceId)
 		if(socketCheck == true){
 			
-			let getProblems = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let getProblems = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getProblems.body
 			let processForCategory = await ProcessProblemsByCategory(problems,selectedCategory)
 			console.log(processForCategory)
@@ -1831,7 +1831,7 @@ app.post("/search-jobs-by-identifier", async(request,response)=>{
 		let userId = data.userId 
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
-			let getJobs = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"job-listings"})
+			let getJobs = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"job-listings"})
 			let jobs = getJobs.body 
 			let searchInput = data.searchInput 
 			let searchJobs = await FilterJobsBySearch(jobs,searchInput)
@@ -1857,10 +1857,10 @@ app.post("/add-new-job-listing", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId,deviceId)
 		if(socketCheck == true){
 			
-			let getJobs = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"job-listings"})
+			let getJobs = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"job-listings"})
 			let jobs = getJobs.body 
 			jobs.push(data.newJob)
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"job-listings"},{$set:{"body":jobs}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"job-listings"},{$set:{"body":jobs}})
 			response.send(JSON.stringify({"status":"success"}))			
 			
 		}else{
@@ -1883,7 +1883,7 @@ app.post("/check-subscription-status", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId,deviceId)
 		if(socketCheck == true){
 			
-			let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
+			let getData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-data-controller"})
 			let adminData = getData.body
 			let subs = adminData.subscriptions
 			
@@ -1934,7 +1934,7 @@ app.post("/generate-new-subscription", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getAdminData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
+			let getAdminData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-data-controller"})
 			let adminData = getAdminData.body
 			let subs = adminData.subscriptions 
 			let newSub = {
@@ -1952,15 +1952,15 @@ app.post("/generate-new-subscription", async(request,response)=>{
 				"ownerId":userId
 			}
 			subs.push(newSub)
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"admin-data-controller"},{$set:{"body":adminData}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"admin-data-controller"},{$set:{"body":adminData}})
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			let user = users.find((users)=>{
 				users.id === userId 
 			})
 			user.subscribed = true 
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 			
 			response.send(JSON.stringify({"status":"success"}))
 			
@@ -2020,7 +2020,7 @@ app.post("/get-job-locations", async()=>{
 		let socketCheck = await checkIfSocketActive(userId,deviceId)
 		
 		if(socketCheck == true){
-			let getJobs = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"job-listings"})
+			let getJobs = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"job-listings"})
 			let jobs = getJobs.body 
 			let process = await getJobLocations(jobs,mode)
 			
@@ -2044,7 +2044,7 @@ app.post("/update-job-object", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		
 		if(socketCheck == true){
-			let getJobs = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"job-listings"})
+			let getJobs = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"job-listings"})
 			let jobs = getJobs.body 
 			let job = jobs.find((jobs)=>{
 				return jobs.id === data.jobId
@@ -2056,7 +2056,7 @@ app.post("/update-job-object", async(request,response)=>{
 				})
 				
 				jobs.splice(index,1,data.job)
-				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"job-listings"},{$set:{"body":jobs}})
+				await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"job-listings"},{$set:{"body":jobs}})
 				response.send(JSON.stringify({"status":"success"}))
 				
 			}else{
@@ -2081,7 +2081,7 @@ app.post("/update-forum-object", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		
 		if(socketCheck == true){
-			let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let getForumData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getForumData.body 
 			let problem = problems.find((problems)=>{
 				return problems.id === data.problemId
@@ -2093,7 +2093,7 @@ app.post("/update-forum-object", async(request,response)=>{
 				})
 				
 				problems.splice(index,1,data.problem)
-				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
+				await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
 				response.send(JSON.stringify({"status":"success"}))
 				
 			}else{
@@ -2152,9 +2152,9 @@ app.post("/add-new-problem", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId,deviceId)
 		
 		if(socketCheck == true){
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body
-			let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let getForumData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getForumData.body 
 			let problem = problems.find((problems)=>{
 				return problems.id === data.problemId
@@ -2162,7 +2162,7 @@ app.post("/add-new-problem", async(request,response)=>{
 			if(!problem){
 				
 				problems.push(data.problem)
-				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
+				await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
 				await notifyAllUsers(userId,users,data.problem,data.notificationId)
 				response.send(JSON.stringify({"status":"success"}))
 				
@@ -2187,13 +2187,13 @@ app.post("/delete-forum-problem-data", async(request,response)=>{
 		let deviceId = data.deviceId 
 		let socketCheck = await checkIfSocketActive(userId,deviceId)
 		if(socketCheck == true){
-			let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let getForumData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getForumData.body 
 			let index = problems.findIndex((problems)=>{
 				return problems.id === data.problemId
 			})
 			problems.splice(index,1)
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
 			response.send(JSON.stringify({"status":"success"}))
 		}else{			
 			response.send(JSON.stringify({"status":"server-error"}))
@@ -2214,7 +2214,7 @@ app.post("/get-fresh-job-data",async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getJobs = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"job-listings"})
+			let getJobs = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"job-listings"})
 			let jobs = getJobs.body
 			let job = jobs.find((jobs)=>{
 				return jobs.id === data.jobId
@@ -2244,7 +2244,7 @@ app.post("/get-fresh-problem-data",async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let getForumData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getForumData.body 
 			let problem = problems.find((problems)=>{
 				return problems.id === data.problemId
@@ -2276,7 +2276,7 @@ app.post("/post-problem-response", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId,deviceId)
 		if(socketCheck == true){
 			
-			let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let getForumData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getForumData.body 
 			let problem = problems.find((problems)=>{
 				return problems.id === data.problemId
@@ -2290,7 +2290,7 @@ app.post("/post-problem-response", async(request,response)=>{
 				}) 
 				if(!search){					
 					problem.corresponders.push(data.responseData)
-					await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
+					await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
 					response.send(JSON.stringify({"status":"success"}))
 				}else{
 					response.send(JSON.stringify({"status":"already-exists"}))
@@ -2317,7 +2317,7 @@ app.post("/post-response-vote", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let getForumData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getForumData.body 
 			let problem = problems.find((problems)=>{
 				return problems.id === data.problemId
@@ -2332,14 +2332,14 @@ app.post("/post-response-vote", async(request,response)=>{
 					if(search.votes.includes(userId) == false){						
 					
 						search.votes.push(userId)
-						await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$se:{"body":problems}})
+						await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"forum-data"},{$se:{"body":problems}})
 						response.send(JSON.stringify({"status":"success","data":{"votes":search.votes.length,"type":"vote"}}))
 					
 					}else{
 						
 						let index = search.votes.indexOf(userId)
 						search.votes.splice(index,1)
-						await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$se:{"body":problems}})
+						await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"forum-data"},{$se:{"body":problems}})
 						response.send(JSON.stringify({"status":"success","data":{"votes":search.votes.length,"type":"unvote"}}))
 						
 					}
@@ -2363,7 +2363,7 @@ app.post("/post-response-vote", async(request,response)=>{
 async function ProcessForumProblems(userId,problems,category){
 	let output = [] 
 	try{
-		let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+		let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 		let users = getUsers.body 
 		let user = users.find((users)=>{
 			return userId === userId 
@@ -2638,7 +2638,7 @@ app.post("/get-problems-by-cateogry", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let getForumData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getForumData.body 
 			let processedOutput = await ProcessForumProblems(userId,problems,data.category)
 			response.send(JSON.stringify({"status":"success","data":processedOutput}))
@@ -2662,7 +2662,7 @@ app.post("/resolve-forum-problem", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let getForumData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getForumData.body 
 			let problem = problems.find((problems)=>{
 				return problems.id === data.problemId
@@ -2676,7 +2676,7 @@ app.post("/resolve-forum-problem", async(request,response)=>{
 				if(search){
 					
 					search.winner = true
-					await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
+					await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"forum-data"},{$set:{"body":problems}})
 					response.send(JSON.stringify({"status":"success"}))
 					
 				}else{
@@ -2708,7 +2708,7 @@ app.post("/get-forum problems-by-category",async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getProblems = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+			let getProblems = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 			let problems = getProblems.body
 			let getData = await ProcessForumProblems(userId,problems,category)
 			
@@ -2763,7 +2763,7 @@ app.post("/upload-user-image/:id", async(request,response)=>{
 			}else{
 				await githubDataTransfer("other",inputStream,`${mediaId}${mediaForma}`,`UserData/${socket.ownerId}/Data/`,request,response)
 		if(socketCheck == true){
-			let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+			let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
 			let sockets = getSockets.body
 			let socket = sockets.find((sockets)=>{
 				return sockets.id === userId
@@ -2792,7 +2792,7 @@ app.post("/upload-user-data/:id", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		let checkServer = await checkServerMode()
 		if(socketCheck == true){
-			let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+			let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
 			let sockets = getSockets.body
 			let socket = sockets.find((sockets)=>{
 				return sockets.id === userId
@@ -2893,13 +2893,13 @@ app.post("/update-user-information", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			let index = users.findIndex((users)=>{
 				users.id === userId
 			})
 			users.splice(index,1,data.userData)
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 			response.setHeader("Content-Type","application/json")
 			response.send(JSON.stringify({"status":"success"}))
 			
@@ -2924,7 +2924,7 @@ app.post("/get-fresh-user-data", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(userId)
 		if(socketCheck == true){
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			let user = users.find((users)=>{
 				return users.id === userId
@@ -3158,7 +3158,7 @@ app.post("/login-admin", async(request,response)=>{
 		let email = data.emailAddress 
 		let password = data.password 
 		let deviceId = data.deviceId
-		let getAdmins = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
+		let getAdmins = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-data-controller"})
 		let admins = getAdmins.body.admins 
 		let search = admins.find((admins)=>{
 			return admins.emailAddress === email
@@ -3168,7 +3168,7 @@ app.post("/login-admin", async(request,response)=>{
 			let passwordx = search.password 
 			if(passwordx === password){
 				if(search.suspended == false){	
-					let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+					let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
 					let sockets = getSockets.body 
 					let socket = sockets.find((sockets)=>{
 						return sockets.id === search.id
@@ -3180,7 +3180,7 @@ app.post("/login-admin", async(request,response)=>{
 						socket.active = true 
 						socket.alreadyLoggedIn = true
 						
-						await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
+						await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-sockets"},{$set:{"body":sockets}})
 						
 						if(search.suspended == false){						
 							response.send(JSON.stringify({"status":"success","data":search}))
@@ -3216,7 +3216,7 @@ app.post("/add-new-admin",async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(adminId,deviceId)
 		if(socketCheck == true){
 			
-			let getAdmins = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-profiles"})
+			let getAdmins = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-profiles"})
 			let admins = getAdmins.body 
 			
 			let searchAdmins = admins.find((admins)=>{
@@ -3228,7 +3228,7 @@ app.post("/add-new-admin",async(request,response)=>{
 				await addUserSocket(adminId,"admin",null)
 				let process = createUserDirectories(adminId)
 				if(process == true){
-					await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"admin-profiles"},{$set:{"body":admins}})
+					await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"admin-profiles"},{$set:{"body":admins}})
 					response.send(JSON.stringify({"status":"success"}))
 					
 				}else{
@@ -3259,14 +3259,14 @@ app.post("/update-admin-data", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(adminId,deviceId)
 		if(socketCheck == true){
 			
-			let getAdmins = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-profiles"})
+			let getAdmins = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-profiles"})
 			let admins = getAdmins.body 
 			let index = admins.findIndex((admins)=>{
 				admins.id === adminId
 			})
 			if(index){				
 				admins.splice(index,1,data.adminData)
-				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"admin-profiles"},{$set:{"body":admins}})
+				await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"admin-profiles"},{$set:{"body":admins}})
 			}else{
 				response.send(JSON.stringify({"status":"server-error"}))
 			}
@@ -3293,7 +3293,7 @@ app.post("/get-fresh-admin-data", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(adminId,deviceId)
 		if(socketCheck == true){
 			
-			let getAdmins = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-profiles"})
+			let getAdmins = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-profiles"})
 			let admins = getAdmins.body 
 			let admin = admins.find((admins)=>{
 				admins.id === adminId
@@ -3328,7 +3328,7 @@ app.post("/get-admin-data-controller",async(request,response)=>{
 			
 			console.log("here")
 			
-			let getAdminDataController = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
+			let getAdminDataController = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-data-controller"})
 			
 			response.send(JSON.stringify({"status":"success","data":getAdminDataController.body}))
 			
@@ -3352,7 +3352,7 @@ app.post("/update-admin-data-controller",async(request,response)=>{
 		let deviceId = data.deviceId
 		let socketCheck = await checkIfSocketActive(accessorId,deviceId)
 		if(socketCheck == true){
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"admin-data-controller"},{$set:{"body":data.adminDataController}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"admin-data-controller"},{$set:{"body":data.adminDataController}})
 			response.send(JSON.stringify({"status":"success"}))
 		}else{
 			response.send(JSON.stringify({"status":"server-error"}))
@@ -3370,8 +3370,8 @@ async function generatePerformanceChartData(type,adminDataController,selectedDat
 	
 	try{		
 		
-		let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
-		let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
+		let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
+		let getData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-data-controller"})
 		let subs = getData.subscriptions
 		let users = getUsers.body
 		
@@ -3433,7 +3433,7 @@ app.post("/get-performance-chart-data", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(adminId,deviceId)
 		if(socketCheck == true){
 			
-			let getAdminDataController = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
+			let getAdminDataController = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-data-controller"})
 			let adminDataController = getAdminDataController.body 
 			
 			let type = data.type 
@@ -3499,7 +3499,7 @@ app.post("/get-all-subscription-transactions", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(adminId,deviceId)
 		if(socketCheck == true){
 			
-			let getSubs = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"subscribed-users"})
+			let getSubs = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"subscribed-users"})
 			let subs = getSubs.body 
 			
 			let process = await filterSubsForDate(subs,data.selectedDate)
@@ -3548,7 +3548,7 @@ app.post("/get-currently-online-users", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(adminId,deviceId)
 		
 		if(socketCheck == true){			
-			let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"})
+			let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"})
 			let sockets = getSockets.body 
 			
 			let process = await getOnlineUsers(sockets)
@@ -3572,7 +3572,7 @@ app.post("/get-total-users", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(accessorId,deviceId)
 		if(socketCheck == true){			
 			
-			let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getSockets.body 
 			
 			response.send(JSON.stringify({"status":"success","value":users.length}))
@@ -3629,7 +3629,7 @@ async function getSubbedUsers(users){
 	
 	//Get admin data controller
 	
-	let getAdminData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"admin-data-controller"})
+	let getAdminData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"admin-data-controller"})
 	let adminData = getAdminData.body 
 	
 	let subscriptions = adminData.subscriptions 
@@ -3671,12 +3671,12 @@ app.post("/get-subscribed-users", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(accessorId,deviceId)
 		if(socketCheck == true){			
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			
 			let process = await getSubbedUsers(users)
 			
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":process.users}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":process.users}})
 			
 			response.send(JSON.stringify({"status":"success","value":process.count}))
 			
@@ -3726,7 +3726,7 @@ app.post("/synchronise-project-data", async(request,response)=>{
 		
 		if(socketCheck == true){
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			let projectOwner = users.find((users)=>{
 				users.id === ownerId
@@ -3745,7 +3745,7 @@ app.post("/synchronise-project-data", async(request,response)=>{
 			
 			projects[projectIndex] = updatedProject
 			
-			await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+			await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 			
 			var proceed = true
 			
@@ -3813,7 +3813,7 @@ app.get("/get-queue-object-files/:id", async(request,response)=>{
 		
 		if(socketCheck == true){
 			
-			let getSockets = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-sockets"});
+			let getSockets = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-sockets"});
 			
 			let sockets = getSockets.body 
 			
@@ -3882,14 +3882,14 @@ async function generateEmailCode(user){
 		output = `${output}${x[0]}`
 	}
 	
-	let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+	let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 	let users = getUsers.body
 	let userx = users.find((users)=>{
 		users.id === user.id
 	})
 	await timeProcessor()
 	userx.verificationCode = {code: output,time:serverTime}
-	await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+	await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 	
 	return output
 }
@@ -3898,7 +3898,7 @@ setTimeout(async()=>{
 	//check users for expired verification codes 
 	await timeProcessor()
 	
-	let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+	let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 	let users = getUsers.body
 	
 	for(var i=0; i<users.length; i++){
@@ -3915,7 +3915,7 @@ setTimeout(async()=>{
 		}
 	}
 	
-	await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+	await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 	
 },30000)
 
@@ -3965,7 +3965,7 @@ app.post("/generate-verification-code", async(request,response)=>{
 		
 		if(socketCheck == true){
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			let user = users.find((users)=>{
 				users.emailAddress === emailAddress
@@ -4013,7 +4013,7 @@ app.post("/check-verification-code", async(request,response)=>{
 		let socketCheck = await checkIfSocketActive(accessorId,deviceId)
 		
 		if(socketCheck == true){
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			let user = users.find((users)=>{
 				users.emailAddress === emailAddress
@@ -4023,7 +4023,7 @@ app.post("/check-verification-code", async(request,response)=>{
 			if(x === code){
 				user.verificationCode = null
 				user.verified = true
-				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+				await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 				response.send(JSON.stringify({"status":"success"}))
 			}else{
 				response.send(JSON.stringify({"status":"invalid-code"}))
@@ -4049,7 +4049,7 @@ app.post("/transfer-purchase-data", async(request,response)=>{
 		
 		if(socketCheck == true){
 			
-			let x = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"purchase-transfer-requests"})
+			let x = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"purchase-transfer-requests"})
 			let requests = x.body 
 			
 			//check if the request id already exists to prevent duplication 
@@ -4059,7 +4059,7 @@ app.post("/transfer-purchase-data", async(request,response)=>{
 			
 			if(!search){				
 				requests.push(data.request)
-				await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"purchase-transfer-requests"},{$set:{"body":requests}})				
+				await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"purchase-transfer-requests"},{$set:{"body":requests}})				
 				response.send(JSON.stringify({"status":"success"}))
 				
 			}else{
@@ -4087,7 +4087,7 @@ app.post("/get-purchase-data", async(request,response)=>{
 		
 		if(socketCheck == true){
 			
-			let x = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"purchase-transfer-requests"})
+			let x = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"purchase-transfer-requests"})
 			let requests = x.body 
 			let requestx = requests.find((requests)=>{
 				requests.jobId === jobId
@@ -4116,7 +4116,7 @@ app.post("/check-feature-availability",async(request,response)=>{
 		
 		if(socketCheck == true){
 			
-			let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"features-available"})
+			let getData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"features-available"})
 			let features = getData.body
 			let output = null
 			if(data.type === "AI Assist"){
@@ -4138,7 +4138,7 @@ app.post("/check-feature-availability",async(request,response)=>{
 app.post("/get-app-current-version", async(request,response)=>{
 	response.setHeader("Content-Type","application/json")
 	try{
-		let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"features-available"})
+		let getData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"features-available"})
 		let features = getData.body
 		response.send(JSON.stringify({"status":"success","version":features.version}))
 	}catch{
@@ -4220,7 +4220,7 @@ app.get("/check-maintenance", async(request,response)=>{
 app.get("/check-ads-availability",async(request,response)=>{
 	response.setHeader("Content-Type","application/json")
 	try{
-		let getData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"ads-available"})
+		let getData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"ads-available"})
 		response.send(JSON.stringify({status:getData.status}))
 	}catch(error){
 		console.log(error)
@@ -4237,7 +4237,7 @@ async function RankAllUsers(users,rankingMode){
 	try{
 		
 		//get forum data 
-		let getForumData = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"forum-data"})
+		let getForumData = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"forum-data"})
 		let problems = getForumData.body 
 		
 		//let get solved problems
@@ -4300,7 +4300,7 @@ async function RankAllUsers(users,rankingMode){
 		}
 		
 		//update users
-		await mongoClient.db("CriterionDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
+		await mongoClient.db("CriterianDev").collection("MainData").updateOne({"name":"user-profiles"},{$set:{"body":users}})
 		
 		if(rankingMode == 0){			
 			//rank users in output (highest to lowest) 
@@ -4335,7 +4335,7 @@ app.post("/get-users-ranked", async(request,response)=>{
 		
 		if(socketCheck == true){
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			
 			let process = await RankAllUsers(users,rankingMode)
@@ -4364,7 +4364,7 @@ app.post("/search-users-by-email", async(request,response)=>{
 		
 		if(socketCheck == true){
 			
-			let getUsers = await mongoClient.db("CriterionDev").collection("MainData").findOne({"name":"user-profiles"})
+			let getUsers = await mongoClient.db("CriterianDev").collection("MainData").findOne({"name":"user-profiles"})
 			let users = getUsers.body 
 			
 			let process = users.find((users)=>{
