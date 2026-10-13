@@ -1332,9 +1332,9 @@
 		position: fixed;
 		z-index: 3;
 		background: #00000078;
-		opacity: 0;
+		opacity: 1;
 		display: block;
-		visibility:hidden;
+		visibility:visible;
 		transition: all linear 400ms;
 		margin-left: -1%;
 	}
@@ -3706,9 +3706,9 @@
 		position: fixed;
 		z-index: 3;
 		background: #00000078;
-		opacity: 0;
+		opacity: 1;
 		display: block;
-		visibility:hidden;
+		visibility:visible;
 		transition: all linear 400ms;
 		margin-left: -1%;
 	}

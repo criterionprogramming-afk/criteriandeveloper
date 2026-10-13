@@ -393,12 +393,12 @@ let serverTime = {
 };
 
 function resizeBodyToDevice() {
-	
-	document.body.style.opacity = "0"
+	document.body.style.opacity = "1"
 	
 	if(queryString === "?adView"){
 		displayMainAdSection()
 	}else{
+		
 		if(window.innerWidth <= 990){
 			x1.src = "Images/xyt.png"
 			x2.src = "Images/xytt.png"
@@ -406,13 +406,12 @@ function resizeBodyToDevice() {
 		}
 		document.body.style.width = window.innerWidth + 'px';
 		document.body.style.height = window.innerHeight + 'px';
-		document.body.style.opacity = "0"
 		mainAdDisplay.style.display = "none"
 		welcomePage.style.display = "block"
 		welcomePage.style.opacity = "1"
 
-		dialogBackground.style.opacity = "0"
-		dialogBackground.style.visibility = "hidden"
+		dialogBackground.style.opacity = "1"
+		dialogBackground.style.visibility = "visible"
 		closeBtn.style.visibility = "hidden"
 
 		for(var i=0; i<xArray.length; i++){
@@ -422,9 +421,6 @@ function resizeBodyToDevice() {
 			})
 			
 		}
-		setTimeout(()=>{
-			document.body.style.opacity = "1"
-		},300)
 		
 		setTimeout(()=>{
 			dialogBackground.style.visibility = "visible"
